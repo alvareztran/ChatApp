@@ -33,7 +33,11 @@ export const NavigationSidebar = () => {
   useEffect(() => {
     fetchBadge();
     const interval = setInterval(fetchBadge, 15000);
-    return () => clearInterval(interval);
+    window.addEventListener('friend-requests:changed', fetchBadge);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('friend-requests:changed', fetchBadge);
+    };
   }, []);
 
   const handleLogout = () => {

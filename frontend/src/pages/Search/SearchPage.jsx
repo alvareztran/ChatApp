@@ -41,7 +41,14 @@ export const SearchPage = () => {
       setRequestMsg('');
     } catch (err) {
       console.error(err);
-      message.error(err.response?.data?.message || 'Không thể gửi lời mời kết bạn!');
+      const status = err.response?.status;
+      message.error(
+        status === 409
+          ? 'Bạn đã gửi lời mời kết bạn cho người này rồi!'
+          : status === 400
+            ? 'Không thể gửi lời mời kết bạn đến người này!'
+            : 'Không thể gửi lời mời kết bạn!'
+      );
     } finally {
       setSending(false);
     }

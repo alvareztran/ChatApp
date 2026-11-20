@@ -31,6 +31,7 @@ export const FriendRequestsPage = () => {
       await friendRequestService.acceptFriendRequest(requestId);
       message.success('Đã chấp nhận lời mời kết bạn!');
       setRequests((prev) => prev.filter((r) => r._id !== requestId));
+      window.dispatchEvent(new Event('friend-requests:changed'));
     } catch (err) {
       console.error(err);
       message.error('Thao tác chấp nhận thất bại!');
@@ -45,6 +46,7 @@ export const FriendRequestsPage = () => {
       await friendRequestService.rejectFriendRequest(requestId);
       message.info('Đã từ chối lời mời.');
       setRequests((prev) => prev.filter((r) => r._id !== requestId));
+      window.dispatchEvent(new Event('friend-requests:changed'));
     } catch (err) {
       console.error(err);
       message.error('Thao tác từ chối thất bại!');
