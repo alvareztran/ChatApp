@@ -26,13 +26,13 @@ const getMessages = async (req, res) => {
 const sendMessage = async (req, res) => {
   const { conversationId, content = "", imgUrl = "" } = req.body || {};
   if (typeof content !== "string" || typeof imgUrl !== "string") {
-    throw httpError(400, "content and imgUrl must be strings");
+    throw httpError(400, "Nội dung tin nhắn không hợp lệ.");
   }
   if (content.trim().length > 5000 || imgUrl.trim().length > 2048) {
-    throw httpError(400, "Message content or image URL is too long");
+    throw httpError(400, "Nội dung tin nhắn hoặc đường dẫn ảnh quá dài.");
   }
   if (!content.trim() && !imgUrl.trim())
-    throw httpError(400, "A message needs text or an image");
+    throw httpError(400, "Tin nhắn cần có nội dung hoặc ảnh.");
 
   const conversation = await getConversationForMember(
     conversationId,
@@ -56,11 +56,11 @@ const sendMessage = async (req, res) => {
 
 const deleteMessage = async (req, res) => {
   if (!isValidObjectId(req.params.message_id))
-    throw httpError(400, "Invalid message ID");
+    throw httpError(400, "Mã tin nhắn không hợp lệ.");
   const message = await Message.findById(req.params.message_id);
-  if (!message) throw httpError(404, "Message not found");
+  if (!message) throw httpError(404, "Không tìm thấy tin nhắn.");
   if (message.sender.toString() !== req.userId)
-    throw httpError(403, "You can only delete your own messages");
+    throw httpError(403, "Bạn chỉ có thể xóa tin nhắn của chính mình.");
 
   const conversation = await getConversationForMember(
     message.conversation.toString(),
@@ -90,7 +90,7 @@ const deleteMessage = async (req, res) => {
     messageId: message._id.toString(),
     lastMessage: conversation.lastMessage,
   });
-  return res.json({ message: "Message deleted successfully" });
+  return res.json({ message: "Đã xóa tin nhắn" });
 };
 
 module.exports = { getMessages, sendMessage, deleteMessage };

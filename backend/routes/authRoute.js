@@ -10,7 +10,7 @@ const credentialsLimiter = rateLimit({
   limit: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: 'Too many authentication attempts. Please try again later.' },
+  message: { message: 'Bạn đã thử quá nhiều lần. Vui lòng thử lại sau.' },
 });
 
 router.post('/signup', credentialsLimiter, asyncHandler(signup));

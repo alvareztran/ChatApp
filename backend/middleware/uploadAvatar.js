@@ -7,7 +7,7 @@ const parser = multer({
   limits: { fileSize: 2 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => {
     if (!allowedTypes.has(file.mimetype)) {
-      const error = new Error('Only JPEG, PNG or WebP images are allowed');
+      const error = new Error('Chỉ hỗ trợ ảnh JPEG, PNG hoặc WebP.');
       error.status = 400;
       return cb(error);
     }
@@ -20,10 +20,10 @@ module.exports = (req, res, next) => {
     if (!error) return next();
     if (error.code === 'LIMIT_FILE_SIZE') {
       error.status = 400;
-      error.message = 'Avatar image must not exceed 2 MB';
+      error.message = 'Ảnh đại diện không được vượt quá 2 MB.';
     } else if (error.code === 'LIMIT_UNEXPECTED_FILE') {
       error.status = 400;
-      error.message = "Unexpected file field; use 'avatar'";
+      error.message = "Trường tệp không hợp lệ; vui lòng dùng trường 'avatar'.";
     } else if (!error.status) {
       error.status = 400;
     }

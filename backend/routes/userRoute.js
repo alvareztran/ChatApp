@@ -12,7 +12,7 @@ const avatarLimiter = rateLimit({
   limit: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: 'Too many avatar uploads. Please try again later.' },
+  message: { message: 'Bạn đã tải ảnh lên quá nhiều lần. Vui lòng thử lại sau.' },
 });
 
 router.use(authMiddleware);

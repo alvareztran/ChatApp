@@ -47,17 +47,17 @@ app.use('/api/friend_requests', friendRequestRoute);
 app.use('/api/conversations', conversationRoute);
 app.use('/api/messages', messageRoute);
 
-app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));
+app.use((_req, res) => res.status(404).json({ message: 'Không tìm thấy đường dẫn.' }));
 app.use((error, _req, res, next) => {
   if (res.headersSent) return next(error);
   let status = error.status || 500;
-  let message = status >= 500 ? 'Internal server error' : error.message;
+  let message = status >= 500 ? 'Lỗi máy chủ, vui lòng thử lại sau.' : error.message;
   if (error.code === 11000) {
     status = 409;
-    message = 'Username or email already exists';
+    message = 'Tên đăng nhập hoặc email đã tồn tại.';
   } else if (error.name === 'ValidationError' || error.name === 'CastError') {
     status = 400;
-    message = error.message;
+    message = 'Dữ liệu không hợp lệ.';
   }
   if (status >= 500) console.error(error);
   return res.status(status).json({ message });

@@ -20,17 +20,17 @@ const getFriends = async (req, res) => {
 
 const deleteFriend = async (req, res) => {
   if (!isValidObjectId(req.params.friend_id))
-    throw httpError(400, "Invalid friend ID");
+    throw httpError(400, "Mã bạn bè không hợp lệ.");
   const relation = await Friend.findById(req.params.friend_id);
-  if (!relation) throw httpError(404, "Friendship not found");
+  if (!relation) throw httpError(404, "Không tìm thấy mối quan hệ bạn bè.");
   if (
     relation.user_A.toString() !== req.userId &&
     relation.user_B.toString() !== req.userId
   ) {
-    throw httpError(403, "You cannot delete this friendship");
+    throw httpError(403, "Bạn không thể hủy kết bạn này.");
   }
   await relation.deleteOne();
-  return res.json({ message: "Friend removed successfully" });
+  return res.json({ message: "Đã hủy kết bạn" });
 };
 
 module.exports = { getFriends, deleteFriend };

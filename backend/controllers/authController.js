@@ -40,7 +40,7 @@ const signup = async (req, res) => {
   ) {
     throw httpError(
       400,
-      "username, password, email, and displayName are required",
+      "Vui lòng nhập đầy đủ tên đăng nhập, mật khẩu, email và tên hiển thị.",
     );
   }
   const passwordBytes = Buffer.byteLength(password, "utf8");
@@ -52,11 +52,11 @@ const signup = async (req, res) => {
   ) {
     throw httpError(
       400,
-      "username/displayName are too long, or password is not between 8 and 72 bytes",
+      "Tên đăng nhập/tên hiển thị quá dài hoặc mật khẩu phải từ 8 đến 72 ký tự.",
     );
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-    throw httpError(400, "A valid email is required");
+    throw httpError(400, "Email không hợp lệ.");
   }
 
   const normalizedUsername = username.trim().toLowerCase();
@@ -67,8 +67,8 @@ const signup = async (req, res) => {
 
   if (duplicate) {
     const field =
-      duplicate.username === normalizedUsername ? "Username" : "Email";
-    throw httpError(409, `${field} already exists`);
+      duplicate.username === normalizedUsername ? "Tên đăng nhập" : "Email";
+    throw httpError(409, `${field} đã tồn tại.`);
   }
 
   const user = await User.create({
@@ -79,7 +79,7 @@ const signup = async (req, res) => {
   });
 
   return res.status(201).json({
-    message: "Registration successful",
+    message: "Đăng ký thành công",
     user: publicUser(user, { self: true }),
   });
 };
@@ -87,14 +87,14 @@ const signup = async (req, res) => {
 const signin = async (req, res) => {
   const { username, password } = req.body || {};
   if (typeof username !== "string" || typeof password !== "string") {
-    throw httpError(400, "username and password are required");
+    throw httpError(400, "Vui lòng nhập tên đăng nhập và mật khẩu.");
   }
 
   const user = await User.findOne({
     username: username.trim().toLowerCase(),
   }).select("+password");
   if (!user || !(await bcrypt.compare(password, user.password))) {
-    throw httpError(401, "Username or password is incorrect");
+    throw httpError(401, "Tên đăng nhập hoặc mật khẩu không đúng.");
   }
 
   const accessToken = signAccessToken(user._id.toString());
@@ -118,21 +118,21 @@ const signout = async (req, res) => {
 
 const refreshToken = async (req, res) => {
   const token = req.cookies && req.cookies[REFRESH_COOKIE];
-  if (!token) throw httpError(401, "Refresh token is required");
+  if (!token) throw httpError(401, "Thiếu phiên đăng nhập.");
 
   let payload;
   try {
     payload = verifyRefreshToken(token);
   } catch (_err) {
-    throw httpError(403, "Refresh token is invalid or expired");
+    throw httpError(403, "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.");
   }
 
   if (!payload || typeof payload === "string" || !payload.sub) {
-    throw httpError(403, "Refresh token is invalid");
+    throw httpError(403, "Phiên đăng nhập không hợp lệ.");
   }
 
   const user = await User.findById(payload.sub).select("_id");
-  if (!user) throw httpError(403, "Refresh token is invalid");
+  if (!user) throw httpError(403, "Phiên đăng nhập không hợp lệ.");
 
   const session = await RefreshToken.findOneAndDelete({
     user: user._id,
@@ -140,7 +140,7 @@ const refreshToken = async (req, res) => {
     expiresAt: { $gt: new Date() },
   });
   if (!session)
-    throw httpError(403, "Refresh token is invalid or has been revoked");
+    throw httpError(403, "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.");
 
   const accessToken = signAccessToken(user._id.toString());
   const nextRefreshToken = await createRefreshSession(user._id);

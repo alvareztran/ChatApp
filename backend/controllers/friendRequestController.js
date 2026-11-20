@@ -16,14 +16,14 @@ const getReceivedRequests = async (req, res) => {
 const sendFriendRequest = async (req, res) => {
   const { toUserId, message } = req.body || {};
   if (!isValidObjectId(toUserId))
-    throw httpError(400, "A valid recipient ID is required");
+    throw httpError(400, "Người nhận không hợp lệ.");
   if (toUserId === req.userId)
-    throw httpError(400, "You cannot send a friend request to yourself");
+    throw httpError(400, "Bạn không thể gửi lời mời kết bạn cho chính mình.");
   if (message !== undefined && typeof message !== "string")
-    throw httpError(400, "message must be a string");
+    throw httpError(400, "Lời nhắn phải là chuỗi ký tự.");
 
   const target = await User.findById(toUserId).select("_id");
-  if (!target) throw httpError(404, "User not found");
+  if (!target) throw httpError(404, "Không tìm thấy người dùng.");
 
   const existingFriend = await Friend.findOne({
     $or: [
@@ -31,7 +31,7 @@ const sendFriendRequest = async (req, res) => {
       { user_A: toUserId, user_B: req.userId },
     ],
   });
-  if (existingFriend) throw httpError(409, "You are already friends");
+  if (existingFriend) throw httpError(409, "Hai bạn đã là bạn bè.");
 
   const existingRequest = await FriendRequest.findOne({
     status: "pending",
@@ -41,25 +41,25 @@ const sendFriendRequest = async (req, res) => {
     ],
   });
   if (existingRequest)
-    throw httpError(409, "A pending friend request already exists");
+    throw httpError(409, "Đã có lời mời kết bạn đang chờ xử lý.");
 
   const request = await FriendRequest.create({
     from: req.userId,
     to: toUserId,
     message: typeof message === "string" ? message.trim() : "",
   });
-  return res.status(201).json({ message: "Friend request sent", request });
+  return res.status(201).json({ message: "Đã gửi lời mời kết bạn", request });
 };
 
 const acceptFriendRequest = async (req, res) => {
   if (!isValidObjectId(req.params.requestId))
-    throw httpError(400, "Invalid request ID");
+    throw httpError(400, "Mã lời mời không hợp lệ.");
   const request = await FriendRequest.findOne({
     _id: req.params.requestId,
     to: req.userId,
     status: "pending",
   });
-  if (!request) throw httpError(404, "Pending friend request not found");
+  if (!request) throw httpError(404, "Không tìm thấy lời mời kết bạn đang chờ xử lý.");
 
   try {
     const [userA, userB] = [
@@ -75,19 +75,19 @@ const acceptFriendRequest = async (req, res) => {
     { _id: request._id, to: req.userId, status: "pending" },
     { $set: { status: "accepted" } },
   );
-  return res.json({ message: "Friend request accepted" });
+  return res.json({ message: "Đã chấp nhận lời mời kết bạn" });
 };
 
 const rejectFriendRequest = async (req, res) => {
   if (!isValidObjectId(req.params.requestId))
-    throw httpError(400, "Invalid request ID");
+    throw httpError(400, "Mã lời mời không hợp lệ.");
   const request = await FriendRequest.findOneAndUpdate(
     { _id: req.params.requestId, to: req.userId, status: "pending" },
     { $set: { status: "rejected" } },
     { new: true },
   );
-  if (!request) throw httpError(404, "Pending friend request not found");
-  return res.json({ message: "Friend request rejected" });
+  if (!request) throw httpError(404, "Không tìm thấy lời mời kết bạn đang chờ xử lý.");
+  return res.json({ message: "Đã từ chối lời mời kết bạn" });
 };
 
 module.exports = {

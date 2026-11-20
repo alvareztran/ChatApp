@@ -13,11 +13,11 @@ const SENDER_SELECT = "username displayName avatarUrl avatarId";
  */
 const getConversationForMember = async (conversationId, userId) => {
   if (!isValidObjectId(conversationId))
-    throw httpError(400, "Invalid conversation ID");
+    throw httpError(400, "Mã cuộc trò chuyện không hợp lệ.");
   const conversation = await Conversation.findById(conversationId);
-  if (!conversation) throw httpError(404, "Conversation not found");
+  if (!conversation) throw httpError(404, "Không tìm thấy cuộc trò chuyện.");
   if (!conversation.participants.some((p) => p.toString() === userId)) {
-    throw httpError(403, "You are not a participant in this conversation");
+    throw httpError(403, "Bạn không phải thành viên của cuộc trò chuyện này.");
   }
   return conversation;
 };
@@ -41,12 +41,12 @@ const createConversation = async (req, res) => {
   } = req.body || {};
 
   if (!["direct", "group"].includes(type))
-    throw httpError(400, "type must be direct or group");
+    throw httpError(400, "Loại cuộc trò chuyện phải là direct hoặc group.");
   if (
     !Array.isArray(requestedParticipants) ||
     requestedParticipants.some((id) => !isValidObjectId(id))
   ) {
-    throw httpError(400, "participants must be an array of valid user IDs");
+    throw httpError(400, "Danh sách thành viên không hợp lệ.");
   }
 
   const participantIds = [
@@ -58,7 +58,7 @@ const createConversation = async (req, res) => {
   ) {
     throw httpError(
       400,
-      "A direct conversation needs exactly 2 participants; a group needs at least 2",
+      "Trò chuyện riêng cần đúng 2 người, trò chuyện nhóm cần ít nhất 2 người.",
     );
   }
   if (
@@ -66,14 +66,14 @@ const createConversation = async (req, res) => {
     typeof name === "string" &&
     name.trim().length > 100
   ) {
-    throw httpError(400, "Group name must not exceed 100 characters");
+    throw httpError(400, "Tên nhóm không được vượt quá 100 ký tự.");
   }
 
   const usersCount = await User.countDocuments({
     _id: { $in: participantIds },
   });
   if (usersCount !== participantIds.length)
-    throw httpError(400, "One or more participants do not exist");
+    throw httpError(400, "Một hoặc nhiều người tham gia không tồn tại.");
 
   if (type === "direct") {
     const existing = await Conversation.findOne({
@@ -93,7 +93,7 @@ const createConversation = async (req, res) => {
   emitToUsers(req.app.get("io"), participantIds, "conversation:new", conversation);
   return res
     .status(201)
-    .json({ message: "Conversation created", conversation });
+    .json({ message: "Đã tạo cuộc trò chuyện", conversation });
 };
 
 const getConversation = async (req, res) => {
@@ -120,7 +120,7 @@ const deleteConversation = async (req, res) => {
   emitToUsers(req.app.get("io"), participantIds, "conversation:deleted", {
     conversationId: conversation._id.toString(),
   });
-  return res.json({ message: "Conversation deleted successfully" });
+  return res.json({ message: "Đã xóa cuộc trò chuyện" });
 };
 
 module.exports = {
