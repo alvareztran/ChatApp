@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { UserAvatar } from '../common/UserAvatar';
+import { GroupMembersModal } from './GroupMembersModal';
 import { Tooltip, Dropdown } from 'antd';
 import {
   PhoneOutlined,
@@ -6,7 +8,8 @@ import {
   SearchOutlined,
   MoreOutlined,
   DeleteOutlined,
-  ArrowLeftOutlined
+  ArrowLeftOutlined,
+  TeamOutlined
 } from '@ant-design/icons';
 
 export const ChatHeader = ({
@@ -15,6 +18,10 @@ export const ChatHeader = ({
   onBack,
   onDeleteConversation,
 }) => {
+  const [membersOpen, setMembersOpen] = useState(false);
+  const isGroup = conversation.type === 'group';
+  const memberCount = conversation.participants?.length || 0;
+
   let title = conversation.name;
   let otherParticipant = null;
 
@@ -53,16 +60,33 @@ export const ChatHeader = ({
           isOnline={true}
         />
 
-        <div className="chat-user-text">
+        <div
+          className="chat-user-text"
+          onClick={isGroup ? () => setMembersOpen(true) : undefined}
+          style={isGroup ? { cursor: 'pointer' } : undefined}
+        >
           <h3>{title}</h3>
-          <div className="chat-user-status">
-            <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--success)' }} />
-            <span>Đang hoạt động</span>
-          </div>
+          {isGroup ? (
+            <div className="chat-user-status member-count">
+              <span>{memberCount} thành viên</span>
+            </div>
+          ) : (
+            <div className="chat-user-status">
+              <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--success)' }} />
+              <span>Đang hoạt động</span>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="chat-header-actions">
+        {isGroup && (
+          <Tooltip title="Xem thành viên nhóm">
+            <button className="action-btn" onClick={() => setMembersOpen(true)}>
+              <TeamOutlined />
+            </button>
+          </Tooltip>
+        )}
         <Tooltip title="Cuộc gọi thoại (Tính năng đang phát triển)">
           <button className="action-btn">
             <PhoneOutlined />
@@ -87,6 +111,15 @@ export const ChatHeader = ({
           </button>
         </Dropdown>
       </div>
+
+      {isGroup && (
+        <GroupMembersModal
+          open={membersOpen}
+          onClose={() => setMembersOpen(false)}
+          conversation={conversation}
+          currentUserId={currentUserId}
+        />
+      )}
     </div>
   );
 };

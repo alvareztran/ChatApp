@@ -377,6 +377,59 @@ a:hover {
 .chat-user-status.offline {
   color: var(--text-muted);
 }
+.chat-user-status.member-count {
+  color: var(--text-secondary);
+}
+.member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 6px;
+  border-radius: 8px;
+}
+.member-row:hover {
+  background: var(--background);
+}
+.member-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.member-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.member-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: #F1F5F9;
+  border-radius: 999px;
+  padding: 1px 6px;
+}
+.member-username {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.member-owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--primary);
+  white-space: nowrap;
+}
 .chat-header-actions {
   display: flex;
   align-items: center;
