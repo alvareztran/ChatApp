@@ -19,11 +19,13 @@ dotenv.config();
 
 const app = express();
 
-const allowedOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',').map((o) => o.trim()).filter(Boolean)
-  : process.env.NODE_ENV === 'production'
-    ? []
-    : true;
+const clientOrigins = (process.env.CLIENT_URL || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const allowedOrigins =
+  clientOrigins.length > 0 ? clientOrigins : process.env.NODE_ENV !== 'production';
 
 app.use(helmet());
 app.use(cors({ origin: allowedOrigins, credentials: true }));
