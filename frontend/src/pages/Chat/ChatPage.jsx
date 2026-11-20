@@ -158,18 +158,27 @@ export const ChatPage = () => {
       }
     };
 
+    let hasConnected = socket.connected;
+    const handleConnect = () => {
+      if (!hasConnected) {
+        hasConnected = true;
+        return;
+      }
+      loadConversations();
+    };
+
     socket.on('message:new', handleNewMessage);
     socket.on('message:deleted', handleMessageDeleted);
     socket.on('conversation:new', handleNewConversation);
     socket.on('conversation:deleted', handleDeletedConversation);
-    socket.on('connect', loadConversations);
+    socket.on('connect', handleConnect);
 
     return () => {
       socket.off('message:new', handleNewMessage);
       socket.off('message:deleted', handleMessageDeleted);
       socket.off('conversation:new', handleNewConversation);
       socket.off('conversation:deleted', handleDeletedConversation);
-      socket.off('connect', loadConversations);
+      socket.off('connect', handleConnect);
     };
   }, [socket, activeConvId, navigate, loadConversations]);
 
