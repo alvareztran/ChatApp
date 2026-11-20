@@ -20,6 +20,7 @@ All routes are prefixed with `/api`.
 | `/auth/signin` | POST | Sign in with `username` and `password`; returns an access token |
 | `/auth/refresh`, `/auth/signout` | POST | Rotate the refresh token or revoke the current session |
 | `/users/me` | GET, PATCH | Get or update the signed-in user's profile |
+| `/users/me/avatar` | POST | Upload an avatar (`avatar` field, multipart). JPEG/PNG/WebP up to 2 MB; stored as 256×256 WebP under `/uploads/avatars` |
 | `/users/search?keyword=...` | GET | Search for users (maximum 20 results) |
 | `/users/:user_id` | GET | Get a public user profile |
 | `/friends` | GET | List the signed-in user's friends |

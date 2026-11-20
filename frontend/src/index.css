@@ -277,6 +277,28 @@ a:hover {
   background: var(--success);
   border: 2px solid #FFFFFF;
 }
+.avatar-upload {
+  position: relative;
+  display: inline-flex;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.avatar-upload-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.45);
+  color: #FFFFFF;
+  font-size: 20px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.avatar-upload:hover .avatar-upload-overlay {
+  opacity: 1;
+}
 
 .conv-meta {
   flex: 1;

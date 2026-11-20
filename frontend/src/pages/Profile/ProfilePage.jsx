@@ -2,24 +2,49 @@ import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { userService } from '../../services/userService';
 import { UserAvatar } from '../../components/common/UserAvatar';
-import { Form, Input, Button, Card, message, Divider } from 'antd';
+import { Form, Input, Button, Card, Upload, message, Divider } from 'antd';
 import {
   UserOutlined,
   MailOutlined,
   PhoneOutlined,
-  PictureOutlined
+  CameraOutlined,
+  LoadingOutlined
 } from '@ant-design/icons';
 
 export const ProfilePage = () => {
   const { currentUser, updateUserProfile } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const handleAvatarUpload = async (file) => {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      message.error('Chỉ hỗ trợ ảnh JPG, PNG hoặc WebP!');
+      return Upload.LIST_END;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      message.error('Ảnh đại diện tối đa 2MB!');
+      return Upload.LIST_END;
+    }
+
+    setAvatarUploading(true);
+    try {
+      const res = await userService.uploadAvatar(file);
+      if (res.user) updateUserProfile(res.user);
+      message.success('Cập nhật ảnh đại diện thành công!');
+    } catch (err) {
+      console.error(err);
+      message.error(err.response?.data?.message || 'Tải ảnh đại diện thất bại!');
+    } finally {
+      setAvatarUploading(false);
+    }
+    return Upload.LIST_END;
+  };
 
   const onFinish = async (values) => {
     setLoading(true);
     try {
       const res = await userService.updateMe({
         displayName: values.displayName,
-        avatarUrl: values.avatarUrl,
         bio: values.bio,
         phone: values.phone,
       });
@@ -57,13 +82,28 @@ export const ProfilePage = () => {
           styles={{ body: { padding: '32px 28px' } }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24 }}>
-            <UserAvatar user={currentUser} size={72} />
+            <Upload
+              accept="image/jpeg,image/png,image/webp"
+              showUploadList={false}
+              beforeUpload={handleAvatarUpload}
+              disabled={avatarUploading}
+            >
+              <div className="avatar-upload">
+                <UserAvatar user={currentUser} size={72} />
+                <span className="avatar-upload-overlay">
+                  {avatarUploading ? <LoadingOutlined /> : <CameraOutlined />}
+                </span>
+              </div>
+            </Upload>
             <div>
               <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>
                 {currentUser?.displayName}
               </h2>
               <p style={{ margin: '2px 0 0 0', color: 'var(--text-secondary)', fontSize: 14 }}>
                 @{currentUser?.username}
+              </p>
+              <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: 12 }}>
+                Nhấp vào ảnh để thay đổi · JPG, PNG, WebP · tối đa 2MB
               </p>
             </div>
           </div>
@@ -76,7 +116,6 @@ export const ProfilePage = () => {
               displayName: currentUser?.displayName || '',
               username: currentUser?.username || '',
               email: currentUser?.email || '',
-              avatarUrl: currentUser?.avatarUrl || '',
               bio: currentUser?.bio || '',
               phone: currentUser?.phone || '',
             }}
@@ -106,17 +145,6 @@ export const ProfilePage = () => {
               label={<span style={{ fontWeight: 500 }}>Địa chỉ Email</span>}
             >
               <Input disabled prefix={<MailOutlined style={{ color: 'var(--text-muted)' }} />} />
-            </Form.Item>
-
-            <Form.Item
-              name="avatarUrl"
-              label={<span style={{ fontWeight: 500 }}>Link ảnh đại diện (Avatar URL)</span>}
-              rules={[{ max: 2048, message: 'Độ dài URL quá lớn!' }]}
-            >
-              <Input
-                prefix={<PictureOutlined style={{ color: 'var(--text-muted)' }} />}
-                placeholder="https://example.com/avatar.jpg"
-              />
             </Form.Item>
 
             <Form.Item

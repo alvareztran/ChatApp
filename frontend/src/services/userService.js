@@ -12,6 +12,13 @@ export const userService = {
     return response.data;
   },
 
+  uploadAvatar: async (file) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await api.post('/users/me/avatar', formData);
+    return response.data;
+  },
+
   searchUsers: async (keyword) => {
     const response = await api.get(`/users/search?keyword=${encodeURIComponent(keyword)}`);
     return response.data;

@@ -15,7 +15,7 @@ and Socket.IO messaging.
 
 - Username/password auth with refresh token rotation and revocation
 - Friend requests (send, accept, reject) and friend list
-- User search, profile editing (avatar URL, bio, phone)
+- User search, profile editing (bio, phone) and avatar upload (JPEG/PNG/WebP, resized to 256×256 WebP)
 - Direct and group conversations
 - Realtime messaging, message deletion, conversation deletion
 - Realtime conversation list updates (per-user socket rooms)
@@ -92,6 +92,8 @@ Frontend (`frontend/.env`):
 ## Security notes
 
 - Email and phone are only returned for the authenticated user themselves.
+- Avatars are validated, re-encoded by sharp and stored under `backend/uploads/`
+  (git-ignored); uploads are capped at 2 MB and rate limited.
 - Signup/signin are rate limited per IP; helmet security headers are enabled.
 - Refresh tokens are stored hashed and rotated on every refresh.
 - `.env` files are git-ignored. Generate long random values for both JWT secrets

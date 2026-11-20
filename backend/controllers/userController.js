@@ -1,5 +1,6 @@
 const User = require("../models/userSchema");
 const { httpError, isValidObjectId, publicUser } = require("../utils/helpers");
+const { saveAvatar, removeAvatar } = require("../utils/avatarStorage");
 
 const getMe = async (req, res) => {
   const user = await User.findById(req.userId);
@@ -41,6 +42,32 @@ const updateMe = async (req, res) => {
   });
 };
 
+const updateAvatar = async (req, res) => {
+  if (!req.file) throw httpError(400, "Avatar image is required");
+
+  const user = await User.findById(req.userId);
+  if (!user) throw httpError(404, "User not found");
+
+  let saved;
+  try {
+    saved = await saveAvatar(req.file.buffer, req.userId);
+  } catch (_err) {
+    throw httpError(400, "Invalid image file");
+  }
+
+  const previousAvatarId = user.avatarId;
+  user.avatarUrl = saved.url;
+  user.avatarId = saved.filename;
+  await user.save();
+  if (previousAvatarId && previousAvatarId !== saved.filename)
+    await removeAvatar(previousAvatarId);
+
+  return res.json({
+    message: "Avatar updated successfully",
+    user: publicUser(user, { self: true }),
+  });
+};
+
 const searchUsers = async (req, res) => {
   const keyword = (req.query.keyword || req.query.q || "").trim();
   if (!keyword) throw httpError(400, "keyword is required");
@@ -68,4 +95,4 @@ const getUser = async (req, res) => {
   return res.json(publicUser(user));
 };
 
-module.exports = { getMe, updateMe, searchUsers, getUser };
+module.exports = { getMe, updateMe, updateAvatar, searchUsers, getUser };

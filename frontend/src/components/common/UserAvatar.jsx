@@ -1,4 +1,5 @@
 import { Avatar } from 'antd';
+import { assetUrl } from '../../utils/assetUrl';
 
 export const UserAvatar = ({ user, size = 42, showOnline = false, isOnline = true }) => {
   const getInitial = (name) => {
@@ -11,7 +12,7 @@ export const UserAvatar = ({ user, size = 42, showOnline = false, isOnline = tru
     <div className="avatar-wrapper" style={{ width: size, height: size }}>
       {user?.avatarUrl ? (
         <img
-          src={user.avatarUrl}
+          src={assetUrl(user.avatarUrl)}
           alt={name}
           className="avatar-img"
           style={{ width: size, height: size }}

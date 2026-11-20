@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
@@ -30,6 +31,14 @@ app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
 const port = process.env.PORT || 3000;
+
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, 'uploads'), {
+    maxAge: '7d',
+    setHeaders: (res) => res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'),
+  }),
+);
 
 app.use('/api/auth', authRoute);
 app.use('/api/users', userRoute);

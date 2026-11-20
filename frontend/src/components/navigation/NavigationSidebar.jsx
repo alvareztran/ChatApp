@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { friendRequestService } from '../../services/friendRequestService';
+import { assetUrl } from '../../utils/assetUrl';
 import { Tooltip, Modal, Avatar } from 'antd';
 import {
   MessageOutlined,
@@ -66,7 +67,7 @@ export const NavigationSidebar = () => {
         <Tooltip title="Hồ sơ cá nhân" placement="right">
           <div className="nav-avatar-btn" onClick={() => navigate('/profile')}>
             {currentUser?.avatarUrl ? (
-              <img src={currentUser.avatarUrl} alt={currentUser.displayName} />
+              <img src={assetUrl(currentUser.avatarUrl)} alt={currentUser.displayName} />
             ) : (
               <Avatar
                 style={{ backgroundColor: 'var(--primary)', color: '#fff', width: '100%', height: '100%', lineHeight: '36px' }}
