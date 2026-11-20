@@ -60,7 +60,7 @@ export const NavigationSidebar = () => {
       <div className="nav-top">
         <Tooltip title="Chattie" placement="right">
           <div className="nav-logo" onClick={() => navigate('/chat')}>
-            <img src="/logo.svg" alt="Chattie" />
+            <img src="/logo-icon.png" alt="Chattie" />
           </div>
         </Tooltip>
 

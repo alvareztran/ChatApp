@@ -392,7 +392,7 @@ export const ChatPage = () => {
           </>
         ) : (
           <div className="empty-chat-state">
-            <img src="/logo.svg" alt="Chattie" />
+            <img src="/logo.png" alt="Chattie" />
             <h2>Chào mừng đến với Chattie!</h2>
             <p>
               Chọn một cuộc trò chuyện từ danh sách bên trái hoặc tạo mới để bắt đầu nhắn tin với bạn bè.

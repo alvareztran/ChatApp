@@ -43,7 +43,7 @@ export const LoginPage = () => {
         styles={{ body: { padding: '36px 32px' } }}
       >
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <img src="/logo.svg" alt="Chattie" style={{ width: 56, height: 56, marginBottom: 12 }} />
+          <img src="/logo.png" alt="Chattie" style={{ width: 190, height: 'auto', marginBottom: 12 }} />
           <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
             Chào mừng trở lại!
           </h1>
