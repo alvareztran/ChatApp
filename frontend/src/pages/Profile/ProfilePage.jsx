@@ -62,26 +62,39 @@ export const ProfilePage = () => {
   };
 
   return (
-    <div style={{ flex: 1, height: '100%', overflowY: 'auto', padding: '32px 40px', background: 'var(--background)' }}>
-      <div style={{ maxWidth: 640, margin: '0 auto' }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+    <div
+      style={{
+        flex: 1,
+        height: '100%',
+        overflow: 'hidden',
+        padding: '16px 24px',
+        background: 'var(--background)'
+      }}
+    >
+      <div style={{ maxWidth: 640, width: '100%', height: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ marginBottom: 10 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
             Hồ sơ cá nhân
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 4 }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2, marginBottom: 0 }}>
             Quản lý thông tin tài khoản và hình ảnh đại diện của bạn
           </p>
         </div>
 
         <Card
           style={{
+            flex: '0 1 auto',
+            minHeight: 0,
+            maxHeight: '100%',
+            display: 'flex',
+            flexDirection: 'column',
             borderRadius: 16,
             border: '1px solid var(--border)',
             boxShadow: 'var(--shadow-sm)'
           }}
-          styles={{ body: { padding: '32px 28px' } }}
+          styles={{ body: { padding: '14px 24px', overflowY: 'auto', flex: 1, minHeight: 0 } }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 10 }}>
             <Upload
               accept="image/jpeg,image/png,image/webp"
               showUploadList={false}
@@ -89,28 +102,29 @@ export const ProfilePage = () => {
               disabled={avatarUploading}
             >
               <div className="avatar-upload">
-                <UserAvatar user={currentUser} size={72} />
+                <UserAvatar user={currentUser} size={64} />
                 <span className="avatar-upload-overlay">
                   {avatarUploading ? <LoadingOutlined /> : <CameraOutlined />}
                 </span>
               </div>
             </Upload>
             <div>
-              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
                 {currentUser?.displayName}
               </h2>
-              <p style={{ margin: '2px 0 0 0', color: 'var(--text-secondary)', fontSize: 14 }}>
+              <p style={{ margin: '2px 0 0 0', color: 'var(--text-secondary)', fontSize: 13 }}>
                 @{currentUser?.username}
               </p>
-              <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: 12 }}>
+              <p style={{ margin: '2px 0 0 0', color: 'var(--text-muted)', fontSize: 12 }}>
                 Nhấp vào ảnh để thay đổi · JPG, PNG, WebP · tối đa 2MB
               </p>
             </div>
           </div>
 
-          <Divider />
+          <Divider style={{ margin: '4px 0 10px 0' }} />
 
           <Form
+            className="compact-form"
             layout="vertical"
             initialValues={{
               displayName: currentUser?.displayName || '',
@@ -122,62 +136,65 @@ export const ProfilePage = () => {
             onFinish={onFinish}
             size="large"
           >
-            <Form.Item
-              name="displayName"
-              label={<span style={{ fontWeight: 500 }}>Tên hiển thị</span>}
-              rules={[
-                { required: true, message: 'Vui lòng nhập tên hiển thị!' },
-                { max: 100, message: 'Tối đa 100 ký tự!' }
-              ]}
-            >
-              <Input prefix={<UserOutlined style={{ color: 'var(--text-muted)' }} />} />
-            </Form.Item>
+            <div className="profile-grid">
+              <Form.Item
+                name="displayName"
+                label={<span style={{ fontWeight: 500 }}>Tên hiển thị</span>}
+                rules={[
+                  { required: true, message: 'Vui lòng nhập tên hiển thị!' },
+                  { max: 100, message: 'Tối đa 100 ký tự!' }
+                ]}
+              >
+                <Input prefix={<UserOutlined style={{ color: 'var(--text-muted)' }} />} />
+              </Form.Item>
 
-            <Form.Item
-              name="username"
-              label={<span style={{ fontWeight: 500 }}>Tên đăng nhập</span>}
-            >
-              <Input disabled prefix={<UserOutlined style={{ color: 'var(--text-muted)' }} />} />
-            </Form.Item>
+              <Form.Item
+                name="username"
+                label={<span style={{ fontWeight: 500 }}>Tên đăng nhập</span>}
+              >
+                <Input disabled prefix={<UserOutlined style={{ color: 'var(--text-muted)' }} />} />
+              </Form.Item>
 
-            <Form.Item
-              name="email"
-              label={<span style={{ fontWeight: 500 }}>Địa chỉ Email</span>}
-            >
-              <Input disabled prefix={<MailOutlined style={{ color: 'var(--text-muted)' }} />} />
-            </Form.Item>
+              <Form.Item
+                name="email"
+                label={<span style={{ fontWeight: 500 }}>Địa chỉ Email</span>}
+              >
+                <Input disabled prefix={<MailOutlined style={{ color: 'var(--text-muted)' }} />} />
+              </Form.Item>
 
-            <Form.Item
-              name="phone"
-              label={<span style={{ fontWeight: 500 }}>Số điện thoại</span>}
-            >
-              <Input
-                prefix={<PhoneOutlined style={{ color: 'var(--text-muted)' }} />}
-                placeholder="0912345678"
-              />
-            </Form.Item>
+              <Form.Item
+                name="phone"
+                label={<span style={{ fontWeight: 500 }}>Số điện thoại</span>}
+              >
+                <Input
+                  prefix={<PhoneOutlined style={{ color: 'var(--text-muted)' }} />}
+                  placeholder="0912345678"
+                />
+              </Form.Item>
+            </div>
 
             <Form.Item
               name="bio"
+              className="bio-field"
               label={<span style={{ fontWeight: 500 }}>Tiểu sử (Bio)</span>}
               rules={[{ max: 500, message: 'Tối đa 500 ký tự!' }]}
             >
               <Input.TextArea
-                rows={3}
+                rows={2}
                 placeholder="Giới thiệu đôi nét về bản thân bạn..."
                 showCount
                 maxLength={500}
               />
             </Form.Item>
 
-            <Form.Item style={{ marginTop: 24 }}>
+            <Form.Item style={{ marginTop: 10 }}>
               <Button
                 type="primary"
                 htmlType="submit"
                 loading={loading}
                 block
                 style={{
-                  height: 44,
+                  height: 40,
                   borderRadius: 8,
                   fontSize: 15,
                   fontWeight: 600,

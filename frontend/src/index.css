@@ -622,3 +622,54 @@ a:hover {
     min-width: 54px;
   }
 }
+
+/* AntD renders the textarea count 22px below the box; keep it inside instead
+   so it can't overlap buttons or modal footers that follow */
+.ant-input-affix-wrapper.ant-input-textarea-show-count .ant-input-data-count {
+  bottom: 5px;
+  inset-inline-end: 14px;
+}
+.ant-input-textarea-show-count textarea {
+  padding-bottom: 22px;
+}
+/* Profile bio: show the count on the label row so the form keeps its height */
+.bio-field {
+  position: relative;
+}
+.bio-field .ant-form-item-control,
+.bio-field .ant-form-item-control-input,
+.bio-field .ant-input-textarea-affix-wrapper {
+  position: static;
+}
+.bio-field .ant-input-textarea-show-count .ant-input-data-count {
+  top: 0;
+  bottom: auto;
+  inset-inline-end: 0;
+}
+.bio-field textarea {
+  padding-bottom: 7px;
+}
+.compact-form .ant-form-item {
+  margin-bottom: 8px;
+}
+.compact-form .ant-form-item-label {
+  padding-bottom: 1px;
+}
+.register-grid,
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+/* Only split into two columns when vertical space is tight */
+@media (max-height: 640px) and (min-width: 481px) {
+  .register-grid {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 12px;
+  }
+}
+@media (max-height: 780px) and (min-width: 481px) {
+  .profile-grid {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 12px;
+  }
+}

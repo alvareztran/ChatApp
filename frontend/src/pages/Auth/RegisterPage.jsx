@@ -36,34 +36,41 @@ export const RegisterPage = () => {
       alignItems: 'center',
       justifyContent: 'center',
       background: 'linear-gradient(135deg, #F5F8FF 0%, #E6F4FF 100%)',
-      padding: '20px'
+      padding: '16px',
+      overflow: 'hidden'
     }}>
       <Card
         style={{
-          width: 440,
+          width: 500,
+          maxWidth: '100%',
+          maxHeight: 'calc(100vh - 32px)',
+          display: 'flex',
+          flexDirection: 'column',
           borderRadius: 16,
           boxShadow: '0 10px 25px -5px rgba(22, 119, 255, 0.1), 0 8px 10px -6px rgba(22, 119, 255, 0.1)',
           border: '1px solid var(--border)'
         }}
-        styles={{ body: { padding: '36px 32px' } }}
+        styles={{ body: { padding: '14px 24px', overflowY: 'auto', flex: 1, minHeight: 0 } }}
       >
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <img src="/logo.png" alt="Chattie" style={{ width: 190, height: 'auto', marginBottom: 12 }} />
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+        <div style={{ textAlign: 'center', marginBottom: 8 }}>
+          <img src="/logo.png" alt="Chattie" style={{ width: 108, height: 'auto', marginBottom: 3 }} />
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
             Tạo tài khoản mới
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 4 }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2, marginBottom: 0 }}>
             Gia nhập cộng đồng nhắn tin Chattie ngay hôm nay
           </p>
         </div>
 
         <Form
+          className="compact-form"
           name="register_form"
           layout="vertical"
           onFinish={onFinish}
           requiredMark={false}
           size="large"
         >
+          <div className="register-grid">
           <Form.Item
             name="displayName"
             label={<span style={{ fontWeight: 500 }}>Họ và tên hiển thị</span>}
@@ -122,15 +129,16 @@ export const RegisterPage = () => {
               autoComplete="new-password"
             />
           </Form.Item>
+          </div>
 
-          <Form.Item style={{ marginTop: 24 }}>
+          <Form.Item style={{ marginTop: 10 }}>
             <Button
               type="primary"
               htmlType="submit"
               loading={loading}
               block
               style={{
-                height: 44,
+                height: 40,
                 borderRadius: 8,
                 fontSize: 15,
                 fontWeight: 600,
@@ -142,7 +150,7 @@ export const RegisterPage = () => {
           </Form.Item>
         </Form>
 
-        <div style={{ textAlign: 'center', marginTop: 16, fontSize: 14, color: 'var(--text-secondary)' }}>
+        <div style={{ textAlign: 'center', marginTop: 8, fontSize: 14, color: 'var(--text-secondary)' }}>
           Đã có tài khoản?{' '}
           <Link to="/login" style={{ fontWeight: 600, color: 'var(--primary)' }}>
             Đăng nhập ngay
