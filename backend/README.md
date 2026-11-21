@@ -28,9 +28,9 @@ All routes are prefixed with `/api`.
 | `/friend_requests` | POST | Send a request using `toUserId` and optional `message` |
 | `/friend_requests/received` | GET | List pending incoming requests |
 | `/friend_requests/:requestId/accept`, `/reject` | PATCH | Accept or reject an incoming request |
-| `/conversations` | GET, POST | List or create conversations (`participants`, `type`, optional `name`) |
+| `/conversations` | GET, POST | List or create conversations (`participants`, `type`, optional `name`). `direct` needs exactly 2 people; `group` needs at least 3 |
 | `/conversations/:conversation_id` | GET, DELETE | Read or delete a conversation |
-| `/messages` | POST | Send with `conversationId`, and `content` or `imgUrl` |
+| `/messages` | POST | Send with `conversationId` and `content` and/or `imgUrl`; optional multipart field `image` (JPEG/PNG/WebP up to 5 MB) |
 | `/messages/conversation/:conversation_id` | GET | List messages (`limit` is capped at 100) |
 | `/messages/:message_id` | DELETE | Delete a message you sent |
 
@@ -41,6 +41,15 @@ sign-up/sign-in responses expose the account's own contact fields.
 Passwords are hashed by the server with bcrypt; clients should send the original
 password over HTTPS, not pre-hash it. Passwords must be 8–72 bytes. Responses
 never include stored passwords.
+
+## Uploads
+
+Avatars and message images are processed with sharp and stored on disk under
+`backend/uploads/` (git-ignored), then served statically at `/uploads/*`:
+
+- Avatars: 256×256 WebP, 2 MB limit (`/users/me/avatar`, field `avatar`).
+- Message images: resized to fit 1600×1600 WebP, 5 MB limit (`POST /messages`,
+  field `image`), removed when the message or its conversation is deleted.
 
 ## Socket.IO
 

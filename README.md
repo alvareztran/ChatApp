@@ -1,102 +1,500 @@
 # Chattie
 
-A realtime chat app with authentication, friends, direct/group conversations,
-and Socket.IO messaging.
+Ứng dụng chat thời gian thực gồm xác thực tài khoản, kết bạn, trò chuyện riêng/nhóm,
+gửi ảnh và cập nhật tin nhắn tức thời qua Socket.IO. Frontend là SPA React, backend là
+REST API + Socket.IO dùng MongoDB.
 
-## Stack
+- Frontend (tham chiếu): https://mychattie.vercel.app
+- API (tham chiếu): https://chatapp-rjpf.onrender.com/api
 
-| Layer | Technology |
+## Mục lục
+
+- [Tính năng](#tính-năng)
+- [Kiến trúc](#kiến-trúc)
+- [Công nghệ](#công-nghệ)
+- [Cấu trúc thư mục](#cấu-trúc-thư-mục)
+- [Yêu cầu môi trường](#yêu-cầu-môi-trường)
+- [Cài đặt và chạy](#cài-đặt-và-chạy)
+- [Biến môi trường](#biến-môi-trường)
+- [Scripts](#scripts)
+- [Luồng hoạt động](#luồng-hoạt-động)
+- [REST API](#rest-api)
+- [Socket.IO](#socketio)
+- [Mô hình dữ liệu](#mô-hình-dữ-liệu)
+- [Tệp tải lên](#tệp-tải-lên)
+- [Giới hạn và bảo mật](#giới-hạn-và-bảo-mật)
+- [Triển khai](#triển-khai)
+- [Khắc phục sự cố](#khắc-phục-sự-cố)
+- [Hạn chế đã biết](#hạn-chế-đã-biết)
+
+## Tính năng
+
+### Tài khoản và phiên đăng nhập
+
+- Đăng ký bằng tên đăng nhập, email, mật khẩu và tên hiển thị.
+- Đăng nhập trả về access token (JWT) và đặt refresh token trong cookie `HttpOnly`.
+- Tự động làm mới access token khi gặp `401`; nhiều request đồng thời được xếp hàng
+  chờ chung một lần refresh.
+- Refresh token được lưu dạng hash trong MongoDB, xoay vòng mỗi lần refresh và bị thu hồi
+  khi đăng xuất.
+- Mật khẩu băm bằng bcrypt (12 rounds), không bao giờ trả về trong response.
+
+### Bạn bè
+
+- Tìm người dùng theo username hoặc tên hiển thị (tối đa 20 kết quả).
+- Gửi lời mời kết bạn kèm lời nhắn (tối đa 500 ký tự), xem lời mời đến, chấp nhận hoặc từ chối.
+- Chặn gửi trùng: đã là bạn bè hoặc đã có lời mời đang chờ thì không gửi thêm.
+- Xem danh sách bạn bè và huỷ kết bạn.
+
+### Trò chuyện
+
+- Trò chuyện riêng (đúng 2 người) và nhóm chat (tối thiểu 3 người, tính cả người tạo).
+- Tạo nhóm cần tên nhóm (tối đa 100 ký tự); tạo lại trò chuyện riêng đã có sẽ trả về
+  cuộc trò chuyện cũ thay vì tạo trùng.
+- Danh sách hội thoại sắp xếp theo hoạt động gần nhất, kèm tin nhắn cuối và người gửi.
+- Xem thành viên nhóm; xoá hội thoại (xoá kèm toàn bộ tin nhắn và ảnh đã tải lên).
+
+### Tin nhắn
+
+- Gửi tin nhắn văn bản (tối đa 5.000 ký tự) hoặc ảnh JPEG/PNG/WebP (tối đa 5 MB).
+- Có thể gửi ảnh kèm chú thích; ảnh được chọn trực tiếp trong ô soạn tin, xem trước và
+  xoá trước khi gửi.
+- Ảnh được xoay theo EXIF, thu nhỏ còn tối đa 1600×1600 và chuyển sang WebP.
+- Tải lịch sử tin nhắn (mặc định 50, tối đa 100 tin gần nhất, trả về theo thứ tự thời gian).
+- Chỉ người gửi được xoá tin nhắn của mình; khi xoá tin cuối, hội thoại tự cập nhật
+  tin nhắn cuối mới.
+
+### Hồ sơ
+
+- Cập nhật tên hiển thị, tiểu sử (tối đa 500 ký tự), số điện thoại.
+- Tải ảnh đại diện JPEG/PNG/WebP (tối đa 2 MB), cắt vuông 256×256 và chuyển sang WebP.
+- Email và số điện thoại chỉ hiển thị với chính chủ tài khoản.
+
+### Thời gian thực
+
+- Socket.IO xác thực bằng access token, mỗi kết nối tự vào phòng riêng `user:<userId>`.
+- Tin nhắn mới, tin nhắn bị xoá, hội thoại mới/bị xoá được đẩy tới mọi thành viên mà
+  client không cần join phòng hội thoại.
+- Khi access token được refresh, client tạo lại kết nối socket với token mới.
+
+## Kiến trúc
+
+```
+┌─────────────────────────────┐
+│  Trình duyệt (React SPA)    │
+│  React Router + Ant Design  │
+└──────────┬──────────────────┘
+           │ HTTPS (axios, Bearer access token, cookie refresh token)
+           │ WSS   (Socket.IO, auth.token)
+┌──────────▼──────────────────┐
+│  Express 5 API + Socket.IO  │
+│  controllers / middleware   │
+└──────────┬──────────────────┘
+           │ Mongoose
+┌──────────▼──────────────────┐
+│           MongoDB           │
+└─────────────────────────────┘
+
+Tệp tải lên: backend/uploads/{avatars,messages}
+được phục vụ tĩnh tại /uploads/*
+```
+
+- **Backend** chia lớp rõ ràng: `routes` khai báo endpoint, `controllers` xử lý nghiệp vụ,
+  `models` định nghĩa schema, `middleware` xác thực và upload, `utils` chứa token,
+  lưu tệp và hàm dùng chung.
+- **Frontend** tổ chức theo `pages` (màn hình), `components` (UI), `contexts` (auth/socket),
+  `services` (gọi API) và `routes` (bảo vệ route).
+
+## Công nghệ
+
+| Thành phần | Công nghệ |
 | --- | --- |
 | Backend | Node.js, Express 5, Mongoose 9, Socket.IO 4 |
-| Auth | JWT access tokens (15m) + rotating refresh tokens in an HTTP-only cookie, bcrypt |
-| Frontend | React 19, Vite, Ant Design 6, React Router 7, axios |
+| Xác thực | JWT access token (15 phút), refresh token trong cookie `HttpOnly` (7 ngày), bcrypt |
+| Upload | multer (bộ nhớ tạm) + sharp (resize/encode WebP) |
+| Bảo mật | helmet, express-rate-limit, CORS theo danh sách origin |
+| Frontend | React 19, Vite 8, Ant Design 6, React Router 7, axios, socket.io-client |
+| Dữ liệu | MongoDB |
 
-## Features
-
-- Username/password auth with refresh token rotation and revocation
-- Friend requests (send, accept, reject) and friend list
-- User search, profile editing (bio, phone) and avatar upload (JPEG/PNG/WebP, resized to 256×256 WebP)
-- Direct and group conversations
-- Realtime messaging, message deletion, conversation deletion
-- Realtime conversation list updates (per-user socket rooms)
-
-## Project structure
+## Cấu trúc thư mục
 
 ```
-backend/    Express API, Mongoose models, JWT auth, Socket.IO server
-frontend/   React SPA (Vite), Ant Design UI, API/socket clients
+project/
+├── backend/
+│   ├── server.js                  # Khởi tạo Express, CORS, static, Socket.IO, error handler
+│   ├── config/db.js               # Kết nối MongoDB
+│   ├── routes/                    # auth, users, friends, friend_requests, conversations, messages
+│   ├── controllers/               # Nghiệp vụ từng nhóm API
+│   ├── models/                    # User, Friend, FriendRequest, Conversation, Message, RefreshToken
+│   ├── middleware/
+│   │   ├── auth.js                # Xác thực Bearer token
+│   │   ├── uploadAvatar.js        # multer cho ảnh đại diện (2 MB)
+│   │   └── uploadMessageImage.js  # multer cho ảnh tin nhắn (5 MB)
+│   ├── socket/index.js            # Xác thực socket + phòng user:<id>
+│   ├── utils/
+│   │   ├── tokens.js              # Ký/verify JWT, cấu hình cookie
+│   │   ├── helpers.js             # asyncHandler, httpError, publicUser
+│   │   ├── socket.js              # emit tới phòng của từng người dùng
+│   │   ├── avatarStorage.js       # Lưu/xoá ảnh đại diện
+│   │   └── messageStorage.js      # Lưu/xoá ảnh tin nhắn
+│   ├── uploads/                   # Tệp tải lên (git-ignored)
+│   ├── .env.example
+│   └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx / main.jsx
+│   │   ├── contexts/              # AuthContext, SocketContext
+│   │   ├── routes/                # AppRoutes, ProtectedRoute
+│   │   ├── pages/                 # Auth, Chat, Friends, FriendRequests, Search, Profile
+│   │   ├── components/            # chat, conversation, layout, navigation, common
+│   │   ├── services/              # api (axios + refresh), auth, user, friend, conversation, message
+│   │   ├── socket/socket.js       # Quản lý một instance socket theo token
+│   │   ├── utils/assetUrl.js      # Ghép URL ảnh tương đối với origin API
+│   │   └── index.css              # Design tokens và style toàn cục
+│   ├── vercel.json                # Rewrite SPA về index.html
+│   ├── .env.example
+│   └── package.json
+└── README.md
 ```
 
-## Prerequisites
+## Yêu cầu môi trường
 
-- Node.js 20+
-- MongoDB running locally (or a connection string)
+- Node.js **20.19+** (khuyến nghị 22 LTS)
+- npm 10+
+- MongoDB 6+ chạy local hoặc MongoDB Atlas
 
-## Setup
+## Cài đặt và chạy
 
-### Backend
+Thứ tự: chạy MongoDB → chạy backend → chạy frontend.
+
+### 1. Backend
 
 ```bash
 cd backend
-cp .env.example .env    # then set MONGODB_URL and both JWT secrets
+cp .env.example .env
+# Sửa .env: MONGODB_URL, JWT_SECRET, REFRESH_TOKEN_SECRET
 npm install
-npm run dev             # http://localhost:3000
+npm run dev
 ```
 
-### Frontend
+API chạy tại `http://localhost:3000` (đổi bằng `PORT`). Tệp tĩnh tại
+`http://localhost:3000/uploads/...`.
+
+### 2. Frontend
 
 ```bash
 cd frontend
 cp .env.example .env
+# Mặc định đã trỏ về http://localhost:3000
 npm install
-npm run dev             # http://localhost:5173
+npm run dev
 ```
 
-MongoDB and the backend must be running before the frontend can sign in.
+Mở `http://localhost:5173`, đăng ký tài khoản rồi đăng nhập.
 
-## Environment
+### 3. Kiểm tra nhanh
 
-Backend (`backend/.env`):
+- `GET http://localhost:3000/api/users/me` không có token trả về `401`.
+- Đăng nhập trên giao diện, mở hai trình duyệt với hai tài khoản để thấy tin nhắn
+  và danh sách hội thoại cập nhật tức thời.
 
-| Variable | Purpose |
-| --- | --- |
-| `PORT` | API port (default 3000) |
-| `MONGODB_URL` | MongoDB connection string |
-| `JWT_SECRET` | Access token signing secret |
-| `REFRESH_TOKEN_SECRET` | Refresh token signing secret (must differ) |
-| `ACCESS_TOKEN_TTL` / `REFRESH_TOKEN_TTL` | Token lifetimes (default `15m` / `7d`) |
-| `CLIENT_URL` | Allowed CORS origin(s), comma separated |
+## Biến môi trường
 
-Frontend (`frontend/.env`):
+### Backend (`backend/.env`)
 
-| Variable | Purpose |
-| --- | --- |
-| `VITE_API_URL` | REST API base URL |
-| `VITE_SOCKET_URL` | Socket.IO server URL |
+| Biến | Mặc định | Ý nghĩa |
+| --- | --- | --- |
+| `PORT` | `3000` | Cổng API |
+| `MONGODB_URL` | — | Chuỗi kết nối MongoDB (bắt buộc) |
+| `JWT_SECRET` | — | Khoá ký access token (bắt buộc) |
+| `REFRESH_TOKEN_SECRET` | — | Khoá ký refresh token, phải khác `JWT_SECRET` (bắt buộc) |
+| `ACCESS_TOKEN_TTL` | `15m` | Thời hạn access token (xem [Hạn chế đã biết](#hạn-chế-đã-biết)) |
+| `REFRESH_TOKEN_TTL` | `7d` | Thời hạn refresh token (xem [Hạn chế đã biết](#hạn-chế-đã-biết)) |
+| `CLIENT_URL` | — | Origin được phép CORS, phân tách bằng dấu phẩy |
+| `NODE_ENV` | — | Đặt `production` khi triển khai: bắt buộc có `CLIENT_URL`, cookie `Secure` + `SameSite=None` |
+
+Lưu ý:
+
+- `CLIENT_URL` so khớp **chính xác** với origin trình duyệt gửi lên. Không thêm dấu `/`
+  cuối: dùng `https://mychattie.vercel.app`, không dùng `https://mychattie.vercel.app/`.
+- Ở môi trường phát triển, nếu `CLIENT_URL` để trống thì mọi origin đều được chấp nhận.
+  Ở production, server từ chối khởi động nếu thiếu biến này.
+- Refresh token cookie chỉ gửi tới đường dẫn `/api/auth`, nên các request khác không mang
+  cookie này.
+
+### Frontend (`frontend/.env`)
+
+| Biến | Mặc định | Ý nghĩa |
+| --- | --- | --- |
+| `VITE_API_URL` | `http://localhost:3000/api` | Base URL REST API (phải có `/api`) |
+| `VITE_SOCKET_URL` | `http://localhost:3000` | URL máy chủ Socket.IO (không có `/api`) |
+
+Vite nhúng biến `VITE_*` vào bundle lúc build, nên thay đổi biến trên Vercel cần build lại.
 
 ## Scripts
 
-| Location | Command | Purpose |
+| Vị trí | Lệnh | Mục đích |
 | --- | --- | --- |
-| backend | `npm run dev` | Start API with nodemon |
-| backend | `npm start` | Start API |
-| frontend | `npm run dev` | Vite dev server |
-| frontend | `npm run build` | Production build |
-| frontend | `npm run lint` | ESLint |
+| backend | `npm run dev` | Chạy API với nodemon |
+| backend | `npm start` | Chạy API production |
+| frontend | `npm run dev` | Vite dev server (5173) |
+| frontend | `npm run build` | Build production vào `dist/` |
+| frontend | `npm run preview` | Xem thử bản build |
+| frontend | `npm run lint` | ESLint toàn bộ mã nguồn |
 
-## API and realtime docs
+## Luồng hoạt động
 
-- REST endpoints and password rules: [backend/README.md](backend/README.md)
-- Socket events (`conversation:new`, `message:new`, etc.): same file, Socket.IO section
+### Đăng nhập và làm mới token
 
-## Security notes
+1. `POST /api/auth/signin` trả `accessToken` (JSON) và đặt `refreshToken` vào cookie
+   `HttpOnly` (path `/api/auth`, 7 ngày).
+2. Frontend lưu access token trong `localStorage`; interceptor axios gắn
+   `Authorization: Bearer <token>` cho mọi request.
+3. Khi API trả `401`, interceptor gọi `POST /api/auth/refresh` đúng một lần; các request
+   lỗi khác chờ trong hàng đợi rồi phát lại với token mới.
+4. Nếu refresh thất bại, frontend xoá token và chuyển người dùng về trang đăng nhập.
+5. `SocketContext` theo dõi token; token đổi thì ngắt socket cũ và kết nối lại với token mới.
 
-- Email and phone are only returned for the authenticated user themselves.
-- Avatars are validated, re-encoded by sharp and stored under `backend/uploads/`
-  (git-ignored); uploads are capped at 2 MB and rate limited.
-- Signup/signin are rate limited per IP; helmet security headers are enabled.
-- Refresh tokens are stored hashed and rotated on every refresh.
-- `.env` files are git-ignored. Generate long random values for both JWT secrets
-  and never reuse the development values in production.
-- In production set `NODE_ENV=production` and `CLIENT_URL`; if the API runs behind
-  a reverse proxy, configure Express `trust proxy` so rate limiting sees client IPs.
+### Gửi tin nhắn thời gian thực
+
+1. Client gọi `POST /api/messages` (JSON hoặc multipart nếu có ảnh).
+2. Server kiểm tra người gửi là thành viên hội thoại, lưu tin nhắn, cập nhật
+   `lastMessage` của hội thoại.
+3. Server phát `message:new` tới phòng `user:<id>` của mọi thành viên.
+4. Client nhận qua socket hoặc qua response HTTP đều dùng `_id` để tránh trùng lặp.
+
+### Tải ảnh
+
+1. multer giữ tệp trong bộ nhớ và giới hạn loại/kích thước.
+2. sharp xoay, resize và encode WebP; tệp ghi vào `uploads/{avatars,messages}`.
+3. MongoDB chỉ lưu URL tương đối như `/uploads/messages/<user>-<uuid>.webp`.
+4. Frontend dùng `assetUrl()` ghép URL tương đối với origin API để ảnh hiển thị đúng
+   khi frontend và backend khác domain.
+5. Khi xoá tin nhắn/hội thoại hoặc thay ảnh đại diện, tệp cũ được xoá khỏi đĩa.
+
+## REST API
+
+Mọi route dưới `/api`. Trừ nhóm `/auth/signup`, `/auth/signin`, `/auth/refresh`,
+`/auth/signout`, tất cả yêu cầu header `Authorization: Bearer <accessToken>`.
+
+### Auth
+
+| Method | Đường dẫn | Body / ghi chú |
+| --- | --- | --- |
+| POST | `/auth/signup` | `username`, `email`, `password`, `displayName` |
+| POST | `/auth/signin` | `username`, `password`; trả `accessToken` + cookie refresh |
+| POST | `/auth/refresh` | Không body; dùng cookie `refreshToken`, xoay token |
+| POST | `/auth/signout` | Không body; thu hồi refresh token hiện tại, trả `204` |
+
+### Users
+
+| Method | Đường dẫn | Ghi chú |
+| --- | --- | --- |
+| GET | `/users/me` | Hồ sơ của chính mình (có email, phone) |
+| PATCH | `/users/me` | `displayName`, `bio`, `phone`, `avatarUrl`, `avatarId` |
+| POST | `/users/me/avatar` | multipart, trường `avatar`; tối đa 2 MB |
+| GET | `/users/search?keyword=` | Tìm theo username/tên hiển thị, tối đa 20 kết quả |
+| GET | `/users/:user_id` | Hồ sơ công khai (không có email, phone) |
+
+### Friends
+
+| Method | Đường dẫn | Ghi chú |
+| --- | --- | --- |
+| GET | `/friends` | Trả `{ friendshipId, user }[]` |
+| DELETE | `/friends/:friend_id` | `friend_id` là `friendshipId` |
+
+### Friend requests
+
+| Method | Đường dẫn | Ghi chú |
+| --- | --- | --- |
+| POST | `/friend_requests` | `toUserId`, `message` (tuỳ chọn) |
+| GET | `/friend_requests/received` | Danh sách lời mời đang chờ |
+| PATCH | `/friend_requests/:requestId/accept` | Chấp nhận, tạo quan hệ bạn bè |
+| PATCH | `/friend_requests/:requestId/reject` | Từ chối |
+
+### Conversations
+
+| Method | Đường dẫn | Ghi chú |
+| --- | --- | --- |
+| GET | `/conversations` | Hội thoại của mình, mới hoạt động trước |
+| POST | `/conversations` | `type` (`direct`/`group`), `participants[]`, `name` (nhóm) |
+| GET | `/conversations/:conversation_id` | Chi tiết hội thoại |
+| DELETE | `/conversations/:conversation_id` | Xoá hội thoại, tin nhắn và ảnh liên quan |
+
+Quy tắc tạo hội thoại:
+
+- `direct`: đúng 2 người sau khi gộp người tạo; nếu đã tồn tại thì trả `200` kèm hội thoại cũ.
+- `group`: ít nhất 3 người sau khi gộp người tạo; tên nhóm tối đa 100 ký tự.
+- Danh sách người tham gia được loại trùng; mọi ID phải tồn tại.
+
+### Messages
+
+| Method | Đường dẫn | Ghi chú |
+| --- | --- | --- |
+| POST | `/messages` | JSON `conversationId`, `content?`, `imgUrl?` hoặc multipart thêm trường `image` |
+| GET | `/messages/conversation/:conversation_id?limit=` | Mặc định 50, tối đa 100, theo thứ tự thời gian |
+| DELETE | `/messages/:message_id` | Chỉ người gửi được xoá |
+
+Ví dụ đăng nhập và gửi ảnh:
+
+```bash
+# Đăng nhập (lưu cookie refreshToken)
+curl -i -c cookies.txt -X POST http://localhost:3000/api/auth/signin \
+  -H "Content-Type: application/json" \
+  -d '{"username":"alice","password":"matkhau123"}'
+
+# Gửi tin nhắn kèm ảnh
+curl -X POST http://localhost:3000/api/messages \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -F "conversationId=$CONVERSATION_ID" \
+  -F "content=Ảnh mới" \
+  -F "image=@./photo.jpg"
+```
+
+Tạo nhóm chat:
+
+```bash
+curl -X POST http://localhost:3000/api/conversations \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"group","name":"Nhóm dự án","participants":["<id1>","<id2>"]}'
+```
+
+Lỗi trả về dạng `{ "message": "..." }` bằng tiếng Việt, với mã trạng thái phù hợp
+(`400`, `401`, `403`, `404`, `409`, `429`, `500`).
+
+## Socket.IO
+
+Kết nối bằng access token:
+
+```js
+import { io } from "socket.io-client";
+
+const socket = io(SOCKET_URL, {
+  auth: { token: accessToken },
+  withCredentials: true,
+});
+```
+
+Server xác thực JWT trong handshake, gắn `socket.userId` và cho socket vào phòng
+`user:<userId>`. Client không cần join phòng hội thoại.
+
+| Sự kiện | Payload | Khi nào |
+| --- | --- | --- |
+| `conversation:new` | Hội thoại đã populate người tham gia | Có hội thoại mới mà bạn tham gia |
+| `conversation:deleted` | `{ conversationId }` | Hội thoại bạn tham gia bị xoá |
+| `message:new` | Tin nhắn đã populate người gửi | Có tin nhắn mới trong hội thoại của bạn |
+| `message:deleted` | `{ conversationId, messageId, lastMessage }` | Tin nhắn bị xoá |
+
+Tin nhắn được lưu vào MongoDB **trước** khi phát sự kiện, nên response HTTP và sự kiện
+socket có thể cùng tồn tại; client nên khử trùng theo `_id`.
+
+## Mô hình dữ liệu
+
+| Collection | Trường chính | Ghi chú |
+| --- | --- | --- |
+| `users` | `username`, `email`, `password`, `displayName`, `avatarUrl`, `avatarId`, `bio`, `phone` | `username`/`email` unique; `password` không bao giờ trả ra |
+| `friends` | `user_A`, `user_B` | Cặp ID được sắp xếp, unique để tránh trùng |
+| `friendrequests` | `from`, `to`, `message`, `status` | `status`: `pending` / `accepted` / `rejected` |
+| `conversations` | `participants[]`, `type`, `name`, `createdBy`, `lastMessage` | `type`: `direct` / `group` |
+| `messages` | `conversation`, `sender`, `content`, `imgUrl` | Index `{ conversation, createdAt }` |
+| `refreshtokens` | `user`, `tokenHash`, `expiresAt` | TTL index tự xoá token hết hạn |
+
+## Tệp tải lên
+
+| Loại | Giới hạn | Xử lý | Nơi lưu |
+| --- | --- | --- | --- |
+| Ảnh đại diện | 2 MB, JPEG/PNG/WebP | Xoay EXIF, cắt 256×256, WebP chất lượng 85 | `backend/uploads/avatars/` |
+| Ảnh tin nhắn | 5 MB, JPEG/PNG/WebP | Xoay EXIF, thu vào 1600×1600, WebP chất lượng 82 | `backend/uploads/messages/` |
+
+- Thư mục `backend/uploads/` bị git-ignore.
+- Server phục vụ tĩnh tại `/uploads` với cache 7 ngày và header
+  `Cross-Origin-Resource-Policy: cross-origin` để frontend khác domain tải được ảnh.
+- Tên tệp gồm ID người dùng và UUID, phần mở rộng luôn là `.webp`.
+- Ảnh đại diện cũ và ảnh tin nhắn bị xoá cùng tin nhắn/hội thoại được dọn khỏi đĩa.
+
+## Giới hạn và bảo mật
+
+| Hạng mục | Giá trị |
+| --- | --- |
+| Đăng ký/đăng nhập | 30 request / 15 phút / IP |
+| Tải ảnh đại diện | 20 request / 15 phút / IP |
+| Mật khẩu | 8–72 byte |
+| Username | tối đa 32 ký tự, chuyển lowercase |
+| Tên hiển thị | 1–100 ký tự |
+| Tiểu sử | tối đa 500 ký tự |
+| Lời nhắn kết bạn | tối đa 500 ký tự |
+| Tin nhắn | tối đa 5.000 ký tự |
+| Tên nhóm | tối đa 100 ký tự |
+| Lịch sử tin nhắn | mặc định 50, tối đa 100 mỗi lần |
+| JSON body | tối đa 1 MB |
+
+- helmet bật security headers; CORS chỉ cho phép origin trong `CLIENT_URL` và gửi kèm
+  credentials.
+- Email/số điện thoại chỉ trả về cho chính chủ tài khoản.
+- Refresh token lưu dạng SHA-256, xoay vòng và thu hồi được; cookie `HttpOnly`,
+  production dùng `Secure` + `SameSite=None` (bắt buộc HTTPS).
+- Mọi truy vấn hội thoại/tin nhắn đều kiểm tra người dùng là thành viên.
+- Từ khoá tìm kiếm được escape trước khi đưa vào regex.
+- `.env` bị git-ignore; không dùng lại secret phát triển ở production.
+- Nếu chạy sau reverse proxy, cấu hình `trust proxy` để rate limit nhận đúng IP.
+
+## Triển khai
+
+### Backend trên Render
+
+1. Tạo Web Service trỏ tới thư mục `backend`, build `npm install`, start `npm start`.
+2. Đặt biến môi trường:
+   - `NODE_ENV=production`
+   - `MONGODB_URL` (MongoDB Atlas)
+   - `JWT_SECRET`, `REFRESH_TOKEN_SECRET` (hai chuỗi ngẫu nhiên dài, khác nhau)
+   - `CLIENT_URL=https://mychattie.vercel.app` (nhiều origin thì phân tách bằng dấu phẩy,
+     không có dấu `/` cuối)
+3. `PORT` do Render cấp; không cần khai báo.
+
+### Frontend trên Vercel
+
+1. Import repo, chọn thư mục `frontend`, framework Vite, output `dist`.
+2. Đặt biến môi trường **trước khi build**:
+   - `VITE_API_URL=https://chatapp-rjpf.onrender.com/api`
+   - `VITE_SOCKET_URL=https://chatapp-rjpf.onrender.com`
+3. Giữ [frontend/vercel.json](frontend/vercel.json) để mọi đường dẫn SPA (như `/chat`)
+   được rewrite về `index.html`, tránh `404` khi tải lại trang.
+4. Đổi biến môi trường xong phải redeploy vì Vite nhúng giá trị lúc build.
+
+### Lưu ý production
+
+- Cookie refresh chỉ hoạt động khi cả hai phía dùng HTTPS và backend có
+  `NODE_ENV=production` (để bật `Secure` + `SameSite=None`).
+- Origin trong `CLIENT_URL` phải trùng khớp tuyệt đối với origin trên trình duyệt.
+- Render dùng đĩa tạm: ảnh trong `backend/uploads` sẽ mất sau mỗi lần deploy/restart.
+  Nếu cần lưu ảnh lâu dài, chuyển sang object storage (S3, Cloudinary, R2...).
+
+## Khắc phục sự cố
+
+| Hiện tượng | Nguyên nhân thường gặp | Cách xử lý |
+| --- | --- | --- |
+| `blocked by CORS policy` | `CLIENT_URL` thiếu origin, thừa dấu `/`, hoặc chưa redeploy sau khi đổi env | Đặt đúng origin, không có `/` cuối, redeploy/restart backend |
+| Tải lại `/chat` bị `404` trên Vercel | Thiếu rewrite SPA | Giữ `frontend/vercel.json` như trong repo |
+| Đăng nhập xong vẫn bị đăng xuất | Cookie không được gửi: `NODE_ENV` chưa `production`, không dùng HTTPS, hoặc thiếu `withCredentials` | Kiểm tra env backend, HTTPS và cấu hình axios |
+| `ECONNREFUSED 127.0.0.1:27017` | MongoDB chưa chạy | Khởi động MongoDB hoặc đổi `MONGODB_URL` sang Atlas |
+| Ảnh tải lên bị `404` | Backend khác origin mà URL ảnh là tương đối | Dùng `assetUrl()` ở frontend và đặt đúng `VITE_API_URL` |
+| Ảnh mất sau khi deploy Render | Đĩa tạm của Render | Dùng object storage cho production |
+| Socket báo `Invalid or expired access token` | Access token hết hạn | Đăng nhập lại; client sẽ tự refresh và tạo lại socket khi token đổi |
+| `CLIENT_URL must be configured in production` | Thiếu biến khi `NODE_ENV=production` | Thêm `CLIENT_URL` rồi redeploy |
+
+## Hạn chế đã biết
+
+- **Chưa có bộ test tự động.** Dự án kiểm tra bằng ESLint, `npm run build` và kiểm thử
+  thủ công các luồng chính.
+- **`ACCESS_TOKEN_TTL` / `REFRESH_TOKEN_TTL` trong `.env` hiện chưa có hiệu lực.**
+  Giá trị TTL được đọc lúc import module, trước khi `dotenv.config()` nạp `.env`, nên
+  token luôn dùng mặc định 15 phút / 7 ngày. Cần sửa thứ tự nạp biến môi trường nếu muốn
+  cấu hình thời hạn.
+- **Ảnh lưu trên đĩa cục bộ.** Phù hợp cho phát triển; production nên dùng object storage.
+- **Không có endpoint health check** cho Render/giám sát; có thể thêm `/api/health` nếu cần.
+
+## Tài liệu liên quan
+
+- [backend/README.md](backend/README.md) — chi tiết API, quy tắc mật khẩu và sự kiện socket.
+- [frontend/README.md](frontend/README.md) — biến môi trường và scripts của frontend.
