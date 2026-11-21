@@ -1,10 +1,30 @@
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 
-const ACCESS_TOKEN_TTL = process.env.ACCESS_TOKEN_TTL || "15m";
-const REFRESH_TOKEN_TTL = process.env.REFRESH_TOKEN_TTL || "7d";
-const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+const DEFAULT_ACCESS_TTL = "15m";
+const DEFAULT_REFRESH_TTL = "7d";
+const DEFAULT_REFRESH_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 const REFRESH_COOKIE = "refreshToken";
+
+const accessTtl = () =>
+  (process.env.ACCESS_TOKEN_TTL || "").trim() || DEFAULT_ACCESS_TTL;
+const refreshTtl = () =>
+  (process.env.REFRESH_TOKEN_TTL || "").trim() || DEFAULT_REFRESH_TTL;
+
+const parseDurationMs = (value) => {
+  const match = /^(\d+)(ms|s|m|h|d)$/i.exec(value);
+  if (!match) return null;
+  const unitMs = {
+    ms: 1,
+    s: 1000,
+    m: 60 * 1000,
+    h: 60 * 60 * 1000,
+    d: 24 * 60 * 60 * 1000,
+  }[match[2].toLowerCase()];
+  return Number(match[1]) * unitMs;
+};
+
+const refreshMaxAge = () => parseDurationMs(refreshTtl()) ?? DEFAULT_REFRESH_MAX_AGE;
 
 const getSecrets = () => {
   if (!process.env.JWT_SECRET || !process.env.REFRESH_TOKEN_SECRET) {
@@ -18,12 +38,12 @@ const getSecrets = () => {
 
 const signAccessToken = (userId) =>
   jwt.sign({ sub: userId }, getSecrets().access, {
-    expiresIn: ACCESS_TOKEN_TTL,
+    expiresIn: accessTtl(),
   });
 
 const signRefreshToken = (userId) =>
   jwt.sign({ sub: userId, jti: crypto.randomUUID() }, getSecrets().refresh, {
-    expiresIn: REFRESH_TOKEN_TTL,
+    expiresIn: refreshTtl(),
   });
 
 const verifyAccessToken = (token) => jwt.verify(token, getSecrets().access);
@@ -36,12 +56,11 @@ const refreshCookieOptions = () => ({
   secure: process.env.NODE_ENV === "production",
   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   path: "/api/auth",
-  maxAge: REFRESH_TOKEN_MAX_AGE,
+  maxAge: refreshMaxAge(),
 });
 
 module.exports = {
   REFRESH_COOKIE,
-  REFRESH_TOKEN_MAX_AGE,
   refreshCookieOptions,
   signAccessToken,
   signRefreshToken,
