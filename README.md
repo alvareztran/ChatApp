@@ -69,6 +69,8 @@ REST API + Socket.IO dùng MongoDB.
 - Socket.IO xác thực bằng access token, mỗi kết nối tự vào phòng riêng `user:<userId>`.
 - Tin nhắn mới, tin nhắn bị xoá, hội thoại mới/bị xoá được đẩy tới mọi thành viên mà
   client không cần join phòng hội thoại.
+- Trạng thái online dựa trên số kết nối socket thực tế: mở nhiều tab vẫn tính là online,
+  chỉ khi tab cuối đóng mới chuyển offline.
 - Khi access token được refresh, client tạo lại kết nối socket với token mới.
 
 ## Kiến trúc
@@ -375,6 +377,11 @@ Server xác thực JWT trong handshake, gắn `socket.userId` và cho socket và
 | `conversation:deleted` | `{ conversationId }` | Hội thoại bạn tham gia bị xoá |
 | `message:new` | Tin nhắn đã populate người gửi | Có tin nhắn mới trong hội thoại của bạn |
 | `message:deleted` | `{ conversationId, messageId, lastMessage }` | Tin nhắn bị xoá |
+| `presence:list` | Mảng ID người dùng đang online | Ngay sau khi kết nối hoặc khi client gửi `presence:sync` |
+| `presence:update` | `{ userId, online }` | Một người dùng vừa online/offline |
+
+Client gửi `presence:sync` để lấy lại danh sách online đầy đủ; server cũng tự gửi
+`presence:list` cho socket vừa kết nối.
 
 Tin nhắn được lưu vào MongoDB **trước** khi phát sự kiện, nên response HTTP và sự kiện
 socket có thể cùng tồn tại; client nên khử trùng theo `_id`.

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { UserAvatar } from '../common/UserAvatar';
 import { GroupMembersModal } from './GroupMembersModal';
+import { useSocket } from '../../contexts/SocketContext';
 import { Tooltip, Dropdown } from 'antd';
 import {
   PhoneOutlined,
@@ -19,6 +20,7 @@ export const ChatHeader = ({
   onDeleteConversation,
 }) => {
   const [membersOpen, setMembersOpen] = useState(false);
+  const { isOnline } = useSocket();
   const isGroup = conversation.type === 'group';
   const memberCount = conversation.participants?.length || 0;
 
@@ -33,6 +35,9 @@ export const ChatHeader = ({
   } else if (!title) {
     title = conversation.participants?.map((p) => p.displayName || p.username).join(', ') || 'Nhóm';
   }
+
+  const otherUserId = otherParticipant?._id || otherParticipant;
+  const otherOnline = !isGroup && isOnline(otherUserId);
 
   const menuItems = [
     {
@@ -57,7 +62,7 @@ export const ChatHeader = ({
           user={conversation.type === 'direct' ? otherParticipant : { displayName: title }}
           size={40}
           showOnline={conversation.type === 'direct'}
-          isOnline={true}
+          isOnline={otherOnline}
         />
 
         <div
@@ -72,8 +77,8 @@ export const ChatHeader = ({
             </div>
           ) : (
             <div className="chat-user-status">
-              <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--success)' }} />
-              <span>Đang hoạt động</span>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: otherOnline ? 'var(--success)' : '#94A3B8' }} />
+              <span>{otherOnline ? 'Đang hoạt động' : 'Không hoạt động'}</span>
             </div>
           )}
         </div>

@@ -28,8 +28,30 @@ const createSocketServer = (httpServer) => {
     }
   });
 
+  const onlineCounts = new Map();
+
   io.on('connection', (socket) => {
-    socket.join(userRoom(socket.userId));
+    const { userId } = socket;
+    socket.join(userRoom(userId));
+
+    const count = (onlineCounts.get(userId) || 0) + 1;
+    onlineCounts.set(userId, count);
+    if (count === 1) io.emit('presence:update', { userId, online: true });
+    socket.emit('presence:list', [...onlineCounts.keys()]);
+
+    socket.on('presence:sync', () => {
+      socket.emit('presence:list', [...onlineCounts.keys()]);
+    });
+
+    socket.on('disconnect', () => {
+      const remaining = (onlineCounts.get(userId) || 1) - 1;
+      if (remaining > 0) {
+        onlineCounts.set(userId, remaining);
+        return;
+      }
+      onlineCounts.delete(userId);
+      io.emit('presence:update', { userId, online: false });
+    });
   });
 
   return io;

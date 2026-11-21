@@ -1,4 +1,5 @@
 import { UserAvatar } from '../common/UserAvatar';
+import { useSocket } from '../../contexts/SocketContext';
 
 export const ConversationItem = ({
   conversation,
@@ -6,6 +7,7 @@ export const ConversationItem = ({
   isActive,
   onClick,
 }) => {
+  const { isOnline } = useSocket();
   // Determine display name and avatar for direct or group
   let title = conversation.name;
   let otherParticipant = null;
@@ -60,7 +62,7 @@ export const ConversationItem = ({
         user={conversation.type === 'direct' ? otherParticipant : { displayName: title }}
         size={44}
         showOnline={conversation.type === 'direct'}
-        isOnline={true}
+        isOnline={isOnline(otherParticipant?._id || otherParticipant)}
       />
 
       <div className="conv-meta">

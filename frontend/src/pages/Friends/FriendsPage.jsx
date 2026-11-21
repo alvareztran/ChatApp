@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { friendService } from '../../services/friendService';
 import { conversationService } from '../../services/conversationService';
+import { useSocket } from '../../contexts/SocketContext';
 import { UserAvatar } from '../../components/common/UserAvatar';
 import { Input, Button, Modal, Spin, Empty, message } from 'antd';
 import {
@@ -16,6 +17,7 @@ export const FriendsPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+  const { isOnline } = useSocket();
 
   const fetchFriends = async () => {
     try {
@@ -146,7 +148,7 @@ export const FriendsPage = () => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <UserAvatar user={u} size={48} showOnline={true} isOnline={true} />
+                    <UserAvatar user={u} size={48} showOnline={true} isOnline={isOnline(u?._id)} />
                     <div>
                       <h4 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
                         {u?.displayName}

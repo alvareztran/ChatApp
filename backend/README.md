@@ -67,6 +67,12 @@ without joining anything:
 | `conversation:deleted` | `{ conversationId }` |
 | `message:new` | New message in any conversation you participate in (populated sender) |
 | `message:deleted` | `{ conversationId, messageId, lastMessage }` |
+| `presence:list` | Array of online user IDs (sent on connect and on `presence:sync`) |
+| `presence:update` | `{ userId, online }` |
+
+Clients can emit `presence:sync` to receive the full online list again. Online
+state is reference-counted per user, so closing one of several open tabs keeps
+the user online until the last socket disconnects.
 
 Messages are persisted through the HTTP API before the `message:new` event is
 emitted, so clients should deduplicate by message ID when they also receive the

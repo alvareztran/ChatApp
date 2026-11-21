@@ -1,7 +1,7 @@
 import { Avatar } from 'antd';
 import { assetUrl } from '../../utils/assetUrl';
 
-export const UserAvatar = ({ user, size = 42, showOnline = false, isOnline = true }) => {
+export const UserAvatar = ({ user, size = 42, showOnline = false, isOnline = false }) => {
   const getInitial = (name) => {
     return name ? name.charAt(0).toUpperCase() : 'U';
   };
