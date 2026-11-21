@@ -16,12 +16,12 @@ All routes are prefixed with `/api`.
 
 | Route | Methods | Purpose |
 | --- | --- | --- |
-| `/auth/signup` | POST | Register with `username`, `email`, `password` (8–72 bytes), and `displayName` |
+| `/auth/signup` | POST | Register with `username`, `email`, `password`, and `displayName` |
 | `/auth/signin` | POST | Sign in with `username` and `password`; returns an access token |
 | `/auth/refresh`, `/auth/signout` | POST | Rotate the refresh token or revoke the current session |
 | `/users/me` | GET, PATCH | Get or update the signed-in user's profile |
-| `/users/me/avatar` | POST | Upload an avatar (`avatar` field, multipart). JPEG/PNG/WebP up to 2 MB; stored as 256×256 WebP under `/uploads/avatars` |
-| `/users/search?keyword=...` | GET | Search for users (maximum 20 results) |
+| `/users/me/avatar` | POST | Upload an avatar (`avatar` field, multipart). JPEG/PNG/WebP; re-encoded to WebP under `/uploads/avatars` |
+| `/users/search?keyword=...` | GET | Search for users |
 | `/users/:user_id` | GET | Get a public user profile |
 | `/friends` | GET | List the signed-in user's friends |
 | `/friends/:friend_id` | DELETE | Remove a friendship |
@@ -30,16 +30,14 @@ All routes are prefixed with `/api`.
 | `/friend_requests/:requestId/accept`, `/reject` | PATCH | Accept or reject an incoming request |
 | `/conversations` | GET, POST | List or create conversations (`participants`, `type`, optional `name`). `direct` needs exactly 2 people; `group` needs at least 3 |
 | `/conversations/:conversation_id` | GET, DELETE | Read or delete a conversation |
-| `/messages` | POST | Send with `conversationId` and `content` and/or `imgUrl`; optional multipart field `image` (JPEG/PNG/WebP up to 5 MB) |
-| `/messages/conversation/:conversation_id` | GET | List messages (`limit` is capped at 100) |
+| `/messages` | POST | Send with `conversationId` and `content` and/or `imgUrl`; optional multipart field `image` (JPEG/PNG/WebP) |
+| `/messages/conversation/:conversation_id` | GET | List messages |
 | `/messages/:message_id` | DELETE | Delete a message you sent |
 
-Signup and sign-in are rate limited to 30 requests per 15 minutes per IP.
 Public user responses never include `email` or `phone`; only `/users/me` and the
 sign-up/sign-in responses expose the account's own contact fields.
 
-Passwords are hashed by the server with bcrypt; clients should send the original
-password over HTTPS, not pre-hash it. Passwords must be 8–72 bytes. Responses
+Clients should send the original password over HTTPS, not pre-hash it. Responses
 never include stored passwords.
 
 ## Uploads
@@ -47,9 +45,9 @@ never include stored passwords.
 Avatars and message images are processed with sharp and stored on disk under
 `backend/uploads/` (git-ignored), then served statically at `/uploads/*`:
 
-- Avatars: 256×256 WebP, 2 MB limit (`/users/me/avatar`, field `avatar`).
-- Message images: resized to fit 1600×1600 WebP, 5 MB limit (`POST /messages`,
-  field `image`), removed when the message or its conversation is deleted.
+- Avatars are re-encoded to WebP (`/users/me/avatar`, field `avatar`).
+- Message images are resized and re-encoded to WebP (`POST /messages`, field
+  `image`) and removed when the message or its conversation is deleted.
 
 ## Socket.IO
 

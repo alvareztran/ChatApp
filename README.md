@@ -20,12 +20,9 @@ REST API + Socket.IO dùng MongoDB.
 - [Luồng hoạt động](#luồng-hoạt-động)
 - [REST API](#rest-api)
 - [Socket.IO](#socketio)
-- [Mô hình dữ liệu](#mô-hình-dữ-liệu)
 - [Tệp tải lên](#tệp-tải-lên)
-- [Giới hạn và bảo mật](#giới-hạn-và-bảo-mật)
 - [Triển khai](#triển-khai)
 - [Khắc phục sự cố](#khắc-phục-sự-cố)
-- [Hạn chế đã biết](#hạn-chế-đã-biết)
 
 ## Tính năng
 
@@ -35,39 +32,36 @@ REST API + Socket.IO dùng MongoDB.
 - Đăng nhập trả về access token (JWT) và đặt refresh token trong cookie `HttpOnly`.
 - Tự động làm mới access token khi gặp `401`; nhiều request đồng thời được xếp hàng
   chờ chung một lần refresh.
-- Refresh token được lưu dạng hash trong MongoDB, xoay vòng mỗi lần refresh và bị thu hồi
-  khi đăng xuất.
-- Mật khẩu băm bằng bcrypt (12 rounds), không bao giờ trả về trong response.
 
 ### Bạn bè
 
-- Tìm người dùng theo username hoặc tên hiển thị (tối đa 20 kết quả).
-- Gửi lời mời kết bạn kèm lời nhắn (tối đa 500 ký tự), xem lời mời đến, chấp nhận hoặc từ chối.
+- Tìm người dùng theo username hoặc tên hiển thị.
+- Gửi lời mời kết bạn kèm lời nhắn, xem lời mời đến, chấp nhận hoặc từ chối.
 - Chặn gửi trùng: đã là bạn bè hoặc đã có lời mời đang chờ thì không gửi thêm.
 - Xem danh sách bạn bè và huỷ kết bạn.
 
 ### Trò chuyện
 
 - Trò chuyện riêng (đúng 2 người) và nhóm chat (tối thiểu 3 người, tính cả người tạo).
-- Tạo nhóm cần tên nhóm (tối đa 100 ký tự); tạo lại trò chuyện riêng đã có sẽ trả về
+- Tạo nhóm cần tên nhóm; tạo lại trò chuyện riêng đã có sẽ trả về
   cuộc trò chuyện cũ thay vì tạo trùng.
 - Danh sách hội thoại sắp xếp theo hoạt động gần nhất, kèm tin nhắn cuối và người gửi.
 - Xem thành viên nhóm; xoá hội thoại (xoá kèm toàn bộ tin nhắn và ảnh đã tải lên).
 
 ### Tin nhắn
 
-- Gửi tin nhắn văn bản (tối đa 5.000 ký tự) hoặc ảnh JPEG/PNG/WebP (tối đa 5 MB).
+- Gửi tin nhắn văn bản hoặc ảnh JPEG/PNG/WebP.
 - Có thể gửi ảnh kèm chú thích; ảnh được chọn trực tiếp trong ô soạn tin, xem trước và
   xoá trước khi gửi.
-- Ảnh được xoay theo EXIF, thu nhỏ còn tối đa 1600×1600 và chuyển sang WebP.
-- Tải lịch sử tin nhắn (mặc định 50, tối đa 100 tin gần nhất, trả về theo thứ tự thời gian).
+- Ảnh được xoay theo EXIF, thu nhỏ và chuyển sang WebP.
+- Tải lịch sử tin nhắn theo thứ tự thời gian.
 - Chỉ người gửi được xoá tin nhắn của mình; khi xoá tin cuối, hội thoại tự cập nhật
   tin nhắn cuối mới.
 
 ### Hồ sơ
 
-- Cập nhật tên hiển thị, tiểu sử (tối đa 500 ký tự), số điện thoại.
-- Tải ảnh đại diện JPEG/PNG/WebP (tối đa 2 MB), cắt vuông 256×256 và chuyển sang WebP.
+- Cập nhật tên hiển thị, tiểu sử và số điện thoại.
+- Tải ảnh đại diện JPEG/PNG/WebP; ảnh được cắt vuông và chuyển sang WebP.
 - Email và số điện thoại chỉ hiển thị với chính chủ tài khoản.
 
 ### Thời gian thực
@@ -110,9 +104,8 @@ Tệp tải lên: backend/uploads/{avatars,messages}
 | Thành phần | Công nghệ |
 | --- | --- |
 | Backend | Node.js, Express 5, Mongoose 9, Socket.IO 4 |
-| Xác thực | JWT access token (15 phút), refresh token trong cookie `HttpOnly` (7 ngày), bcrypt |
+| Xác thực | JWT access token + refresh token trong cookie `HttpOnly` |
 | Upload | multer (bộ nhớ tạm) + sharp (resize/encode WebP) |
-| Bảo mật | helmet, express-rate-limit, CORS theo danh sách origin |
 | Frontend | React 19, Vite 8, Ant Design 6, React Router 7, axios, socket.io-client |
 | Dữ liệu | MongoDB |
 
@@ -125,11 +118,11 @@ project/
 │   ├── config/db.js               # Kết nối MongoDB
 │   ├── routes/                    # auth, users, friends, friend_requests, conversations, messages
 │   ├── controllers/               # Nghiệp vụ từng nhóm API
-│   ├── models/                    # User, Friend, FriendRequest, Conversation, Message, RefreshToken
+│   ├── models/                    # Định nghĩa schema Mongoose
 │   ├── middleware/
 │   │   ├── auth.js                # Xác thực Bearer token
-│   │   ├── uploadAvatar.js        # multer cho ảnh đại diện (2 MB)
-│   │   └── uploadMessageImage.js  # multer cho ảnh tin nhắn (5 MB)
+│   │   ├── uploadAvatar.js        # multer cho ảnh đại diện
+│   │   └── uploadMessageImage.js  # multer cho ảnh tin nhắn
 │   ├── socket/index.js            # Xác thực socket + phòng user:<id>
 │   ├── utils/
 │   │   ├── tokens.js              # Ký/verify JWT, cấu hình cookie
@@ -208,10 +201,10 @@ Mở `http://localhost:5173`, đăng ký tài khoản rồi đăng nhập.
 | `MONGODB_URL` | — | Chuỗi kết nối MongoDB (bắt buộc) |
 | `JWT_SECRET` | — | Khoá ký access token (bắt buộc) |
 | `REFRESH_TOKEN_SECRET` | — | Khoá ký refresh token, phải khác `JWT_SECRET` (bắt buộc) |
-| `ACCESS_TOKEN_TTL` | `15m` | Thời hạn access token (xem [Hạn chế đã biết](#hạn-chế-đã-biết)) |
-| `REFRESH_TOKEN_TTL` | `7d` | Thời hạn refresh token (xem [Hạn chế đã biết](#hạn-chế-đã-biết)) |
+| `ACCESS_TOKEN_TTL` | `15m` | Thời hạn access token; dùng đơn vị `s`, `m`, `h`, `d` |
+| `REFRESH_TOKEN_TTL` | `7d` | Thời hạn refresh token, đồng thời là tuổi cookie refresh |
 | `CLIENT_URL` | — | Origin được phép CORS, phân tách bằng dấu phẩy |
-| `NODE_ENV` | — | Đặt `production` khi triển khai: bắt buộc có `CLIENT_URL`, cookie `Secure` + `SameSite=None` |
+| `NODE_ENV` | — | Đặt `production` khi triển khai (khi đó bắt buộc có `CLIENT_URL`) |
 
 Lưu ý:
 
@@ -219,8 +212,6 @@ Lưu ý:
   cuối: dùng `https://mychattie.vercel.app`, không dùng `https://mychattie.vercel.app/`.
 - Ở môi trường phát triển, nếu `CLIENT_URL` để trống thì mọi origin đều được chấp nhận.
   Ở production, server từ chối khởi động nếu thiếu biến này.
-- Refresh token cookie chỉ gửi tới đường dẫn `/api/auth`, nên các request khác không mang
-  cookie này.
 
 ### Frontend (`frontend/.env`)
 
@@ -247,9 +238,8 @@ Vite nhúng biến `VITE_*` vào bundle lúc build, nên thay đổi biến trê
 ### Đăng nhập và làm mới token
 
 1. `POST /api/auth/signin` trả `accessToken` (JSON) và đặt `refreshToken` vào cookie
-   `HttpOnly` (path `/api/auth`, 7 ngày).
-2. Frontend lưu access token trong `localStorage`; interceptor axios gắn
-   `Authorization: Bearer <token>` cho mọi request.
+   `HttpOnly`.
+2. Interceptor axios gắn `Authorization: Bearer <token>` cho mọi request.
 3. Khi API trả `401`, interceptor gọi `POST /api/auth/refresh` đúng một lần; các request
    lỗi khác chờ trong hàng đợi rồi phát lại với token mới.
 4. Nếu refresh thất bại, frontend xoá token và chuyển người dùng về trang đăng nhập.
@@ -292,8 +282,8 @@ Mọi route dưới `/api`. Trừ nhóm `/auth/signup`, `/auth/signin`, `/auth/r
 | --- | --- | --- |
 | GET | `/users/me` | Hồ sơ của chính mình (có email, phone) |
 | PATCH | `/users/me` | `displayName`, `bio`, `phone`, `avatarUrl`, `avatarId` |
-| POST | `/users/me/avatar` | multipart, trường `avatar`; tối đa 2 MB |
-| GET | `/users/search?keyword=` | Tìm theo username/tên hiển thị, tối đa 20 kết quả |
+| POST | `/users/me/avatar` | multipart, trường `avatar` |
+| GET | `/users/search?keyword=` | Tìm theo username/tên hiển thị |
 | GET | `/users/:user_id` | Hồ sơ công khai (không có email, phone) |
 
 ### Friends
@@ -324,7 +314,7 @@ Mọi route dưới `/api`. Trừ nhóm `/auth/signup`, `/auth/signin`, `/auth/r
 Quy tắc tạo hội thoại:
 
 - `direct`: đúng 2 người sau khi gộp người tạo; nếu đã tồn tại thì trả `200` kèm hội thoại cũ.
-- `group`: ít nhất 3 người sau khi gộp người tạo; tên nhóm tối đa 100 ký tự.
+- `group`: ít nhất 3 người sau khi gộp người tạo.
 - Danh sách người tham gia được loại trùng; mọi ID phải tồn tại.
 
 ### Messages
@@ -332,7 +322,7 @@ Quy tắc tạo hội thoại:
 | Method | Đường dẫn | Ghi chú |
 | --- | --- | --- |
 | POST | `/messages` | JSON `conversationId`, `content?`, `imgUrl?` hoặc multipart thêm trường `image` |
-| GET | `/messages/conversation/:conversation_id?limit=` | Mặc định 50, tối đa 100, theo thứ tự thời gian |
+| GET | `/messages/conversation/:conversation_id?limit=` | Trả theo thứ tự thời gian |
 | DELETE | `/messages/:message_id` | Chỉ người gửi được xoá |
 
 Ví dụ đăng nhập và gửi ảnh:
@@ -389,55 +379,17 @@ Server xác thực JWT trong handshake, gắn `socket.userId` và cho socket và
 Tin nhắn được lưu vào MongoDB **trước** khi phát sự kiện, nên response HTTP và sự kiện
 socket có thể cùng tồn tại; client nên khử trùng theo `_id`.
 
-## Mô hình dữ liệu
-
-| Collection | Trường chính | Ghi chú |
-| --- | --- | --- |
-| `users` | `username`, `email`, `password`, `displayName`, `avatarUrl`, `avatarId`, `bio`, `phone` | `username`/`email` unique; `password` không bao giờ trả ra |
-| `friends` | `user_A`, `user_B` | Cặp ID được sắp xếp, unique để tránh trùng |
-| `friendrequests` | `from`, `to`, `message`, `status` | `status`: `pending` / `accepted` / `rejected` |
-| `conversations` | `participants[]`, `type`, `name`, `createdBy`, `lastMessage` | `type`: `direct` / `group` |
-| `messages` | `conversation`, `sender`, `content`, `imgUrl` | Index `{ conversation, createdAt }` |
-| `refreshtokens` | `user`, `tokenHash`, `expiresAt` | TTL index tự xoá token hết hạn |
-
 ## Tệp tải lên
 
-| Loại | Giới hạn | Xử lý | Nơi lưu |
-| --- | --- | --- | --- |
-| Ảnh đại diện | 2 MB, JPEG/PNG/WebP | Xoay EXIF, cắt 256×256, WebP chất lượng 85 | `backend/uploads/avatars/` |
-| Ảnh tin nhắn | 5 MB, JPEG/PNG/WebP | Xoay EXIF, thu vào 1600×1600, WebP chất lượng 82 | `backend/uploads/messages/` |
+| Loại | Định dạng | Nơi lưu |
+| --- | --- | --- |
+| Ảnh đại diện | JPEG/PNG/WebP | `backend/uploads/avatars/` |
+| Ảnh tin nhắn | JPEG/PNG/WebP | `backend/uploads/messages/` |
 
-- Thư mục `backend/uploads/` bị git-ignore.
-- Server phục vụ tĩnh tại `/uploads` với cache 7 ngày và header
-  `Cross-Origin-Resource-Policy: cross-origin` để frontend khác domain tải được ảnh.
+- Ảnh được xoay theo EXIF, thu nhỏ và chuyển sang WebP trước khi lưu.
+- Thư mục `backend/uploads/` bị git-ignore; server phục vụ tĩnh tại `/uploads`.
 - Tên tệp gồm ID người dùng và UUID, phần mở rộng luôn là `.webp`.
 - Ảnh đại diện cũ và ảnh tin nhắn bị xoá cùng tin nhắn/hội thoại được dọn khỏi đĩa.
-
-## Giới hạn và bảo mật
-
-| Hạng mục | Giá trị |
-| --- | --- |
-| Đăng ký/đăng nhập | 30 request / 15 phút / IP |
-| Tải ảnh đại diện | 20 request / 15 phút / IP |
-| Mật khẩu | 8–72 byte |
-| Username | tối đa 32 ký tự, chuyển lowercase |
-| Tên hiển thị | 1–100 ký tự |
-| Tiểu sử | tối đa 500 ký tự |
-| Lời nhắn kết bạn | tối đa 500 ký tự |
-| Tin nhắn | tối đa 5.000 ký tự |
-| Tên nhóm | tối đa 100 ký tự |
-| Lịch sử tin nhắn | mặc định 50, tối đa 100 mỗi lần |
-| JSON body | tối đa 1 MB |
-
-- helmet bật security headers; CORS chỉ cho phép origin trong `CLIENT_URL` và gửi kèm
-  credentials.
-- Email/số điện thoại chỉ trả về cho chính chủ tài khoản.
-- Refresh token lưu dạng SHA-256, xoay vòng và thu hồi được; cookie `HttpOnly`,
-  production dùng `Secure` + `SameSite=None` (bắt buộc HTTPS).
-- Mọi truy vấn hội thoại/tin nhắn đều kiểm tra người dùng là thành viên.
-- Từ khoá tìm kiếm được escape trước khi đưa vào regex.
-- `.env` bị git-ignore; không dùng lại secret phát triển ở production.
-- Nếu chạy sau reverse proxy, cấu hình `trust proxy` để rate limit nhận đúng IP.
 
 ## Triển khai
 
@@ -464,8 +416,7 @@ socket có thể cùng tồn tại; client nên khử trùng theo `_id`.
 
 ### Lưu ý production
 
-- Cookie refresh chỉ hoạt động khi cả hai phía dùng HTTPS và backend có
-  `NODE_ENV=production` (để bật `Secure` + `SameSite=None`).
+- Cookie refresh chỉ hoạt động khi cả hai phía dùng HTTPS.
 - Origin trong `CLIENT_URL` phải trùng khớp tuyệt đối với origin trên trình duyệt.
 - Render dùng đĩa tạm: ảnh trong `backend/uploads` sẽ mất sau mỗi lần deploy/restart.
   Nếu cần lưu ảnh lâu dài, chuyển sang object storage (S3, Cloudinary, R2...).
@@ -483,18 +434,7 @@ socket có thể cùng tồn tại; client nên khử trùng theo `_id`.
 | Socket báo `Invalid or expired access token` | Access token hết hạn | Đăng nhập lại; client sẽ tự refresh và tạo lại socket khi token đổi |
 | `CLIENT_URL must be configured in production` | Thiếu biến khi `NODE_ENV=production` | Thêm `CLIENT_URL` rồi redeploy |
 
-## Hạn chế đã biết
-
-- **Chưa có bộ test tự động.** Dự án kiểm tra bằng ESLint, `npm run build` và kiểm thử
-  thủ công các luồng chính.
-- **`ACCESS_TOKEN_TTL` / `REFRESH_TOKEN_TTL` trong `.env` hiện chưa có hiệu lực.**
-  Giá trị TTL được đọc lúc import module, trước khi `dotenv.config()` nạp `.env`, nên
-  token luôn dùng mặc định 15 phút / 7 ngày. Cần sửa thứ tự nạp biến môi trường nếu muốn
-  cấu hình thời hạn.
-- **Ảnh lưu trên đĩa cục bộ.** Phù hợp cho phát triển; production nên dùng object storage.
-- **Không có endpoint health check** cho Render/giám sát; có thể thêm `/api/health` nếu cần.
-
 ## Tài liệu liên quan
 
-- [backend/README.md](backend/README.md) — chi tiết API, quy tắc mật khẩu và sự kiện socket.
+- [backend/README.md](backend/README.md) — chi tiết API và sự kiện socket.
 - [frontend/README.md](frontend/README.md) — biến môi trường và scripts của frontend.
