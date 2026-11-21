@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { Tooltip, Modal, Input } from "antd";
+import { useEffect, useState } from "react";
+import { Tooltip, Modal, Input, Upload, message } from "antd";
 import {
   SendOutlined,
   SmileOutlined,
   PictureOutlined,
+  LinkOutlined,
 } from "@ant-design/icons";
 
 const COMMON_EMOJIS = [
@@ -21,24 +22,56 @@ const COMMON_EMOJIS = [
   "🥳",
 ];
 
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
 export const MessageComposer = ({ onSendMessage, disabled }) => {
   const [content, setContent] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [imageUrlModal, setImageUrlModal] = useState(false);
   const [imgUrlInput, setImgUrlInput] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreview("");
+      return undefined;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
+
+  const canSend = Boolean(content.trim() || imgUrlInput.trim() || imageFile);
 
   const handleSend = async () => {
-    if (!content.trim() && !imgUrlInput.trim()) return;
+    if (!canSend) return;
     try {
       await onSendMessage({
         content: content.trim(),
         imgUrl: imgUrlInput.trim(),
+        imageFile: imageFile || undefined,
       });
       setContent("");
       setImgUrlInput("");
+      setImageFile(null);
     } catch {
       // Keep the draft so it can be retried after a failed send.
     }
+  };
+
+  const handlePickImage = (file) => {
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      message.error("Chỉ hỗ trợ ảnh JPEG, PNG hoặc WebP!");
+      return false;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      message.error("Ảnh tối đa 5MB!");
+      return false;
+    }
+    setImageFile(file);
+    return false;
   };
 
   const handleKeyDown = (e) => {
@@ -85,24 +118,34 @@ export const MessageComposer = ({ onSendMessage, disabled }) => {
         </div>
       )}
 
-      {imgUrlInput && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "6px 12px",
-            background: "#EFF6FF",
-            borderRadius: 8,
-            marginBottom: 8,
-            fontSize: 12,
-            color: "var(--primary)",
-          }}
-        >
-          <span>Ảnh đính kèm: {imgUrlInput.slice(0, 40)}...</span>
+      {imageFile && (
+        <div className="composer-attachment">
+          <img
+            src={imagePreview}
+            alt={imageFile.name}
+            className="composer-attachment-thumb"
+          />
+          <span className="composer-attachment-name">{imageFile.name}</span>
           <button
+            type="button"
+            className="composer-attachment-remove"
+            onClick={() => setImageFile(null)}
+          >
+            ✕ Xóa
+          </button>
+        </div>
+      )}
+
+      {imgUrlInput && (
+        <div className="composer-attachment">
+          <LinkOutlined />
+          <span className="composer-attachment-name">
+            Ảnh đính kèm: {imgUrlInput}
+          </span>
+          <button
+            type="button"
+            className="composer-attachment-remove"
             onClick={() => setImgUrlInput("")}
-            style={{ color: "var(--danger)", fontWeight: "bold" }}
           >
             ✕ Xóa
           </button>
@@ -122,6 +165,25 @@ export const MessageComposer = ({ onSendMessage, disabled }) => {
           </button>
         </Tooltip>
 
+        <Upload
+          accept="image/jpeg,image/png,image/webp"
+          showUploadList={false}
+          beforeUpload={handlePickImage}
+          disabled={disabled}
+          multiple={false}
+        >
+          <Tooltip title="Gửi ảnh từ máy">
+            <button
+              type="button"
+              className="action-btn"
+              style={{ width: 28, height: 28, color: "var(--text-secondary)" }}
+              disabled={disabled}
+            >
+              <PictureOutlined />
+            </button>
+          </Tooltip>
+        </Upload>
+
         <Tooltip title="Đính kèm liên kết ảnh">
           <button
             type="button"
@@ -130,7 +192,7 @@ export const MessageComposer = ({ onSendMessage, disabled }) => {
             onClick={() => setImageUrlModal(true)}
             disabled={disabled}
           >
-            <PictureOutlined />
+            <LinkOutlined />
           </button>
         </Tooltip>
 
@@ -152,7 +214,7 @@ export const MessageComposer = ({ onSendMessage, disabled }) => {
           type="button"
           className="send-btn"
           onClick={handleSend}
-          disabled={disabled || (!content.trim() && !imgUrlInput.trim())}
+          disabled={disabled || !canSend}
         >
           <SendOutlined />
         </button>

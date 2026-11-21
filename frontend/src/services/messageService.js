@@ -6,7 +6,16 @@ export const messageService = {
     return response.data;
   },
 
-  sendMessage: async ({ conversationId, content = '', imgUrl = '' }) => {
+  sendMessage: async ({ conversationId, content = '', imgUrl = '', imageFile = null }) => {
+    if (imageFile) {
+      const formData = new FormData();
+      formData.append('conversationId', conversationId);
+      formData.append('content', content);
+      if (imgUrl) formData.append('imgUrl', imgUrl);
+      formData.append('image', imageFile);
+      const response = await api.post('/messages', formData);
+      return response.data;
+    }
     const response = await api.post('/messages', { conversationId, content, imgUrl });
     return response.data;
   },

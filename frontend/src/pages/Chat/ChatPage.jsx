@@ -183,13 +183,14 @@ export const ChatPage = () => {
   }, [socket, activeConvId, navigate, loadConversations]);
 
   // 5. Send Message Handler
-  const handleSendMessage = async ({ content, imgUrl }) => {
+  const handleSendMessage = async ({ content, imgUrl, imageFile }) => {
     if (!activeConvId) return;
     try {
       const sent = await messageService.sendMessage({
         conversationId: activeConvId,
         content,
         imgUrl,
+        imageFile,
       });
 
       setConversations((prev) => withMessage(prev, sent));
@@ -261,6 +262,10 @@ export const ChatPage = () => {
     }
     if (convType === 'group' && !groupName.trim()) {
       message.warning('Vui lòng đặt tên nhóm!');
+      return;
+    }
+    if (convType === 'group' && selectedParticipants.length < 2) {
+      message.warning('Nhóm chat cần ít nhất 3 người (bao gồm bạn)!');
       return;
     }
 
@@ -457,7 +462,11 @@ export const ChatPage = () => {
             </label>
             <Select
               mode={convType === 'group' ? 'multiple' : undefined}
-              placeholder="Chọn bạn bè..."
+              placeholder={
+                convType === 'group'
+                  ? 'Chọn ít nhất 2 người bạn...'
+                  : 'Chọn bạn bè...'
+              }
               style={{ width: '100%' }}
               value={convType === 'group' ? selectedParticipants : selectedParticipants[0]}
               onChange={(val) => {

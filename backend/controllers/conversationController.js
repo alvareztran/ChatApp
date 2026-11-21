@@ -3,6 +3,7 @@ const Message = require("../models/messageSchema");
 const User = require("../models/userSchema");
 const { httpError, isValidObjectId } = require("../utils/helpers");
 const { emitToUsers } = require("../utils/socket");
+const { removeMessageImage } = require("../utils/messageStorage");
 
 const PARTICIPANT_SELECT = "username displayName avatarUrl avatarId";
 const SENDER_SELECT = "username displayName avatarUrl avatarId";
@@ -52,13 +53,14 @@ const createConversation = async (req, res) => {
   const participantIds = [
     ...new Set([req.userId, ...requestedParticipants.map(String)]),
   ];
+  const minimumParticipants = type === "group" ? 3 : 2;
   if (
-    participantIds.length < 2 ||
+    participantIds.length < minimumParticipants ||
     (type === "direct" && participantIds.length !== 2)
   ) {
     throw httpError(
       400,
-      "Trò chuyện riêng cần đúng 2 người, trò chuyện nhóm cần ít nhất 2 người.",
+      "Trò chuyện riêng cần đúng 2 người, nhóm chat cần ít nhất 3 người.",
     );
   }
   if (
@@ -115,7 +117,16 @@ const deleteConversation = async (req, res) => {
     req.userId,
   );
   const participantIds = conversation.participants.map(String);
+  const uploadedImages = await Message.find({
+    conversation: conversation._id,
+    imgUrl: /^\/uploads\/messages\//,
+  }).select("imgUrl");
   await Message.deleteMany({ conversation: conversation._id });
+  await Promise.all(
+    uploadedImages.map((message) =>
+      removeMessageImage(message.imgUrl.split("/").pop()),
+    ),
+  );
   await conversation.deleteOne();
   emitToUsers(req.app.get("io"), participantIds, "conversation:deleted", {
     conversationId: conversation._id.toString(),

@@ -1,6 +1,7 @@
 import { UserAvatar } from '../common/UserAvatar';
 import { Dropdown } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
+import { assetUrl } from '../../utils/assetUrl';
 
 export const MessageItem = ({ message, isMine, onDeleteMessage }) => {
   const formatTime = (dateStr) => {
@@ -40,7 +41,7 @@ export const MessageItem = ({ message, isMine, onDeleteMessage }) => {
             {message.content && <div>{message.content}</div>}
             {message.imgUrl && (
               <img
-                src={message.imgUrl}
+                src={assetUrl(message.imgUrl)}
                 alt="Attachment"
                 className="msg-img"
                 onError={(e) => { e.target.style.display = 'none'; }}

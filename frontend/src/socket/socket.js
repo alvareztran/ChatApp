@@ -1,21 +1,31 @@
-import { io } from 'socket.io-client';
+import { io } from "socket.io-client";
 
 let socket = null;
+let currentToken = null;
 
 export const initSocket = (token) => {
   if (!token) return null;
 
-  if (socket) {
+  if (socket && currentToken === token) {
     if (socket.connected) return socket;
-    socket.disconnect();
+
+    socket.connect();
+    return socket;
   }
 
-  const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+
+  currentToken = token;
+
+  const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:3000";
 
   socket = io(socketUrl, {
     auth: { token },
     withCredentials: true,
-    transports: ['websocket', 'polling'],
+    transports: ["websocket", "polling"],
     autoConnect: true,
   });
 
@@ -27,4 +37,6 @@ export const disconnectSocket = () => {
     socket.disconnect();
     socket = null;
   }
+
+  currentToken = null;
 };

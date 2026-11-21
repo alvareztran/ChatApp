@@ -2,6 +2,10 @@ const Conversation = require("../models/conversationSchema");
 const Message = require("../models/messageSchema");
 const { httpError, isValidObjectId } = require("../utils/helpers");
 const { emitToUsers } = require("../utils/socket");
+const {
+  saveMessageImage,
+  removeMessageImage,
+} = require("../utils/messageStorage");
 const { getConversationForMember } = require("./conversationController");
 
 const SENDER_SELECT = "username displayName avatarUrl avatarId";
@@ -28,21 +32,35 @@ const sendMessage = async (req, res) => {
   if (typeof content !== "string" || typeof imgUrl !== "string") {
     throw httpError(400, "Nội dung tin nhắn không hợp lệ.");
   }
-  if (content.trim().length > 5000 || imgUrl.trim().length > 2048) {
+  if (content.trim().length > 5000) {
     throw httpError(400, "Nội dung tin nhắn hoặc đường dẫn ảnh quá dài.");
   }
-  if (!content.trim() && !imgUrl.trim())
-    throw httpError(400, "Tin nhắn cần có nội dung hoặc ảnh.");
 
   const conversation = await getConversationForMember(
     conversationId,
     req.userId,
   );
+
+  let finalImgUrl = imgUrl.trim();
+  if (req.file) {
+    try {
+      const saved = await saveMessageImage(req.file.buffer, req.userId);
+      finalImgUrl = saved.url;
+    } catch (_err) {
+      throw httpError(400, "Tệp ảnh không hợp lệ.");
+    }
+  }
+  if (finalImgUrl.length > 2048) {
+    throw httpError(400, "Nội dung tin nhắn hoặc đường dẫn ảnh quá dài.");
+  }
+  if (!content.trim() && !finalImgUrl)
+    throw httpError(400, "Tin nhắn cần có nội dung hoặc ảnh.");
+
   const message = await Message.create({
     conversation: conversation._id,
     sender: req.userId,
     content: content.trim(),
-    imgUrl: imgUrl.trim(),
+    imgUrl: finalImgUrl,
   });
   await message.populate("sender", SENDER_SELECT);
   await Conversation.updateOne(
@@ -67,6 +85,9 @@ const deleteMessage = async (req, res) => {
     req.userId,
   );
   await message.deleteOne();
+  if (message.imgUrl.startsWith("/uploads/messages/")) {
+    await removeMessageImage(message.imgUrl.split("/").pop());
+  }
 
   if (
     conversation.lastMessage &&
