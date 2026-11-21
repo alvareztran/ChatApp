@@ -1,8 +1,8 @@
-import api from './api';
+import api from "./api";
 
 export const friendService = {
   getFriends: async () => {
-    const response = await api.get('/friends');
+    const response = await api.get("/friends");
     return response.data;
   },
 

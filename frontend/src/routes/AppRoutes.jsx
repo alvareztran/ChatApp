@@ -1,13 +1,13 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { ProtectedRoute } from './ProtectedRoute';
-import { AppLayout } from '../components/layout/AppLayout';
-import { LoginPage } from '../pages/Auth/LoginPage';
-import { RegisterPage } from '../pages/Auth/RegisterPage';
-import { ChatPage } from '../pages/Chat/ChatPage';
-import { FriendsPage } from '../pages/Friends/FriendsPage';
-import { FriendRequestsPage } from '../pages/FriendRequests/FriendRequestsPage';
-import { SearchPage } from '../pages/Search/SearchPage';
-import { ProfilePage } from '../pages/Profile/ProfilePage';
+import { Routes, Route, Navigate } from "react-router-dom";
+import { ProtectedRoute } from "./ProtectedRoute";
+import { AppLayout } from "../components/layout/AppLayout";
+import { LoginPage } from "../pages/Auth/LoginPage";
+import { RegisterPage } from "../pages/Auth/RegisterPage";
+import { ChatPage } from "../pages/Chat/ChatPage";
+import { FriendsPage } from "../pages/Friends/FriendsPage";
+import { FriendRequestsPage } from "../pages/FriendRequests/FriendRequestsPage";
+import { SearchPage } from "../pages/Search/SearchPage";
+import { ProfilePage } from "../pages/Profile/ProfilePage";
 
 export const AppRoutes = () => {
   return (
